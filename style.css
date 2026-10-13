@@ -1,0 +1,80 @@
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+body { background: linear-gradient(135deg, #0f172a, #1e293b, #0f2027); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 15px; color: #fff; }
+.quiz-card { background: rgba(15, 23, 42, 0.98); border: 4px solid #38bdf8; border-radius: 24px; width: 100%; max-width: 1600px; padding: 25px 35px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); position: relative; }
+
+.top-system-bar { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 8px 18px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 12px; }
+.admin-badge { padding: 4px 12px; border-radius: 6px; font-weight: bold; font-size: 14px; }
+.badge-student { background: #0284c7; color: #fff; }
+.badge-admin { background: #22c55e; color: #fff; }
+
+.top-nav-btns { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #334155; padding-bottom: 12px; }
+.rule-row { display: flex; align-items: center; gap: 12px; background: #1e293b; padding: 10px 16px; border-radius: 12px; border: 1px solid #475569; flex-wrap: wrap; width: 100%; }
+.rule-row label { font-weight: bold; font-size: 15px; color: #38bdf8; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.rule-row input[type="text"], .rule-row input[type="number"], .rule-row select, .rule-row input[type="time"] { padding: 6px 10px; border-radius: 8px; border: 2px solid #38bdf8; background: #0f172a; color: #fde047; font-weight: bold; font-size: 15px; }
+
+.time-adjust-group { display: inline-flex; align-items: center; background: #0f172a; border: 2px solid #f43f5e; border-radius: 8px; overflow: hidden; padding: 2px; }
+.btn-step-time { background: #334155; color: #fca5a5; border: none; padding: 4px 8px; font-size: 13px; font-weight: 900; cursor: pointer; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
+.btn-step-time:hover:not(:disabled) { background: #e11d48; color: #fff; }
+.btn-step-time:disabled { opacity: 0.4; cursor: not-allowed; }
+.time-input-box { border: none !important; background: transparent !important; padding: 2px 6px !important; outline: none; }
+
+.pts-adjust-group { display: inline-flex; align-items: center; background: #0f172a; border: 2px solid #38bdf8; border-radius: 8px; overflow: hidden; padding: 2px; }
+.btn-step-pts { background: #334155; color: #38bdf8; border: none; width: 28px; height: 28px; font-size: 16px; font-weight: 900; cursor: pointer; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
+.btn-step-pts:hover:not(:disabled) { background: #0284c7; color: #fff; }
+.btn-step-pts:disabled { opacity: 0.4; cursor: not-allowed; }
+.pts-input-box { width: 48px !important; text-align: center !important; border: none !important; background: transparent !important; padding: 2px !important; }
+
+.mode-switch-box { display: flex; align-items: center; background: #0f172a; border: 2px solid #a855f7; border-radius: 10px; padding: 4px 8px; gap: 6px; }
+.mode-switch-box select { background: #a855f7; color: #ffffff; font-size: 15px; font-weight: 800; border: none; border-radius: 6px; padding: 4px 8px; cursor: pointer; outline: none; }
+.mode-switch-box select.real-mode { background: #22c55e !important; color: #ffffff !important; }
+
+.custom-date-box { position: relative; display: inline-flex; align-items: center; width: 150px; cursor: pointer; }
+.custom-date-display { padding: 5px 30px 5px 10px; border-radius: 8px; border: 2px solid #38bdf8; background: #0f172a; color: #fde047; font-weight: bold; font-size: 15px; width: 100%; text-align: left; cursor: pointer; }
+.hidden-date-input { position: absolute; right: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 5; }
+
+.btn-config { background: #334155; border: 2px solid #38bdf8; color: #38bdf8; padding: 8px 14px; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 15px; transition: all 0.2s; white-space: nowrap; }
+.btn-config:hover:not(:disabled) { background: #0284c7; color: #fff; }
+
+.header-title-box { text-align: center; margin-bottom: 12px; }
+.main-title { font-size: 38px; color: #f59e0b; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; margin-bottom: 4px; text-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
+.sub-title { font-size: 24px; color: #38bdf8; font-weight: 700; margin-top: 4px; }
+
+#wheel-screen { text-align: center; position: relative; }
+.wheel-container { position: relative; width: 720px; height: 720px; margin: 5px auto 10px; }
+.pointer { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 26px solid transparent; border-right: 26px solid transparent; border-top: 48px solid #f43f5e; z-index: 10; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6)); }
+#wheel-canvas { width: 720px; height: 720px; border-radius: 50%; border: 10px solid #38bdf8; box-shadow: 0 0 35px rgba(56, 189, 248, 0.6); background: #0f172a; }
+
+.btn-spin { background: #eab308; border: none; color: #000; padding: 16px 36px; border-radius: 16px; font-weight: 800; font-size: 26px; cursor: pointer; box-shadow: 0 6px 20px rgba(234, 179, 8, 0.5); }
+.btn-spin:hover { background: #ca8a04; transform: scale(1.03); }
+
+/* FONT CHỮ TIVI DỄ NHÌN NỔI BẬT */
+.selected-student-modal { background: #1e293b; border: 4px solid #eab308; padding: 20px; border-radius: 20px; margin-top: 10px; display: none; text-align: center; }
+.winner-display-name { font-size: 70px !important; color: #fde047 !important; font-weight: 900 !important; text-shadow: 0 0 25px rgba(253, 224, 71, 0.8); display: inline-block; margin-top: 5px; }
+.btn-start-q { background: #22c55e; border: none; color: #fff; padding: 16px 45px; border-radius: 16px; font-weight: 800; font-size: 28px; cursor: pointer; margin-top: 15px; }
+
+#quiz-body { display: none; }
+.status-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #1e293b; padding: 15px 25px; border-radius: 16px; font-weight: 800; font-size: 36px; }
+.timer { color: #f43f5e; font-size: 40px; }
+
+.student-select-dropdown { background: #0f172a; color: #fde047; font-size: 34px; font-weight: 900; border: 3px solid #eab308; border-radius: 12px; padding: 4px 12px; cursor: pointer; outline: none; }
+.student-select-dropdown option { background: #1e293b; color: #ffffff; font-size: 22px; }
+
+.lifelines { display: flex; gap: 12px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+.btn-life { background: #0284c7; border: 2px solid #38bdf8; color: #fff; padding: 12px 20px; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 20px; }
+.btn-fail-penalty { background: #dc2626; border: 2px solid #ef4444; color: #ffffff; padding: 12px 20px; border-radius: 12px; cursor: pointer; font-weight: 800; font-size: 20px; }
+
+.question-box { background: #1e293b; border-left: 10px solid #38bdf8; padding: 22px 30px; border-radius: 18px; font-size: 60px !important; line-height: 1.35; margin-bottom: 25px; font-weight: 800; color: #ffffff; text-align: left; }
+.options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 25px; }
+.btn-opt { background: #334155; border: 3px solid #475569; color: #ffffff; padding: 18px 24px; border-radius: 16px; text-align: left; font-size: 45px !important; cursor: pointer; font-weight: 800; line-height: 1.3; }
+.btn-opt.correct { background: #166534 !important; border-color: #22c55e !important; color: #fff; }
+.btn-opt.wrong { background: #991b1b !important; border-color: #ef4444 !important; color: #fff; }
+
+.explanation { background: #090d16; border: 4px solid #fde047; padding: 22px 30px; border-radius: 18px; font-size: 50px !important; color: #ffffff; display: none; margin-bottom: 25px; line-height: 1.4; }
+.btn-next { background: #22c55e; border: none; color: #fff; padding: 16px 40px; border-radius: 14px; font-weight: 800; font-size: 26px; cursor: pointer; display: none; }
+
+.lockdown-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(12px); border-radius: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 50; padding: 20px; text-align: center; }
+.lockdown-box { background: #1e293b; border: 3px solid #ef4444; padding: 30px 40px; border-radius: 20px; box-shadow: 0 0 40px rgba(239, 68, 68, 0.4); max-width: 650px; }
+.lockdown-title { font-size: 32px; color: #fca5a5; font-weight: 800; margin-bottom: 12px; }
+.lockdown-msg { font-size: 22px; color: #fde047; font-weight: bold; margin-bottom: 20px; line-height: 1.4; }
+.mc-badge { background: #a855f7; color: #fff; padding: 4px 12px; border-radius: 8px; font-weight: bold; font-size: 15px; display: inline-flex; align-items: center; gap: 6px; }
+.mc-select-box { background: #0f172a; color: #fde047; font-weight: bold; font-size: 15px; border: 2px solid #a855f7; border-radius: 8px; padding: 4px 8px; outline: none; cursor: pointer; }

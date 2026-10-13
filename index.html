@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Học Tập - V50.0 Cloud Edition</title>
+    
+    <!-- MathJax & Mammoth / PDF Libs -->
+    <script>
+    window.MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+      options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'] }
+    };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
+
+    <!-- Thư viện giao diện CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="quiz-card">
+    <!-- OVERLAY KHÓA GIỜ GIẢNG ĐƯỜNG -->
+    <div id="lockdown-overlay" class="lockdown-overlay" style="display: none;">
+        <div class="lockdown-box">
+            <div class="lockdown-title">🔒 ĐỀ THI CHƯA ĐẾN GIỜ MỞ</div>
+            <div class="lockdown-msg" id="lockdown-msg-text">Mở lúc 06:45:00</div>
+            <p style="color:#94a3b8; font-size:16px; margin-bottom:20px;">MC Điều hành & Học sinh vui lòng chờ đúng giờ hệ thống để bắt đầu buổi học.</p>
+            <button onclick="openModal('admin-login-modal')" style="background:#22c55e; color:#fff; border:none; padding:12px 24px; border-radius:12px; font-weight:bold; font-size:18px; cursor:pointer;">🔑 Nhập Mật Khẩu Admin (Thầy) Để Mở Cưỡng Chế / Sửa Giờ</button>
+        </div>
+    </div>
+
+    <!-- THANH HỆ THỐNG & ĐĂNG NHẬP ADMIN -->
+    <div class="top-system-bar">
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <span id="role-badge" class="admin-badge badge-student">👤 QUYỀN HỌC SINH</span>
+            <span class="mc-badge">🎙️ MC Điều Hành: 
+                <select id="mc-top-dropdown" class="mc-select-box" onchange="saveMCSelection(this.value)"></select>
+            </span>
+        </div>
+        <div style="display:flex; gap:10px;">
+            <button id="btn-admin-login" onclick="openModal('admin-login-modal')" style="background:#eab308; color:#000; border:none; padding:6px 14px; border-radius:8px; font-weight:bold; cursor:pointer;">🔑 Đăng Nhập Quản Trị (Thầy)</button>
+            <button id="btn-change-pass" onclick="openModal('change-pass-modal')" style="background:#0284c7; color:#fff; border:none; padding:6px 14px; border-radius:8px; font-weight:bold; cursor:pointer; display:none;">⚙️ Đổi Mật Khẩu</button>
+            <button id="btn-admin-logout" onclick="logoutAdmin()" style="background:#dc2626; color:#fff; border:none; padding:6px 14px; border-radius:8px; font-weight:bold; cursor:pointer; display:none;">🔒 Đăng Xuất Admin</button>
+        </div>
+    </div>
+
+    <!-- THANH CẤU HÌNH & ĐIỀU HÀNH THÔNG MINH -->
+    <div class="top-nav-btns">
+        <div class="rule-row">
+            <div class="mode-switch-box">
+                <label style="color:#a855f7; margin:0;">⚙️ Chế độ:</label>
+                <select id="game-mode-select" onchange="toggleGameMode(this.value)">
+                    <option value="test" selected>🧪 Thi Thử (Luyện Tập)</option>
+                    <option value="real">🎯 Thi Thật (Tính Điểm)</option>
+                </select>
+            </div>
+
+            <label style="color:#f43f5e;">⏱️ Giờ mở đề:
+                <div class="time-adjust-group">
+                    <button class="btn-step-time admin-only" disabled onclick="adjustLockTime(-5)" title="Lùi 5 phút">➖ 5p</button>
+                    <input type="time" id="lock-time-input" value="06:45" class="time-input-box admin-only" disabled oninput="saveLockTime(this.value)">
+                    <button class="btn-step-time admin-only" disabled onclick="adjustLockTime(5)" title="Tăng 5 phút">➕ 5p</button>
+                </div>
+            </label>
+
+            <label>📅 Tuần:
+                <select id="week-select" onchange="onWeekChanged(this.value)" style="width:100px;"></select>
+            </label>
+
+            <label>📅 Ngày: 
+                <div class="custom-date-box" onclick="triggerDatePicker('session-date-picker')">
+                    <input type="text" id="session-date-display" class="custom-date-display" readonly>
+                    <span style="position:absolute; right:8px; pointer-events:none;">📅</span>
+                    <input type="date" id="session-date-picker" class="hidden-date-input" onchange="onDateChanged(this.value)">
+                </div>
+            </label>
+
+            <label style="flex-grow:1;">📚 Môn / Chủ đề: 
+                <select id="topic-select" onchange="switchTopicPreset()" style="width:100%; min-width:240px;"></select>
+            </label>
+        </div>
+
+        <div class="rule-row" style="justify-content: space-between;">
+            <div style="display:flex; align-items:center; gap:20px;">
+                <label>🎯 Đúng: 
+                    <div class="pts-adjust-group">
+                        <button class="btn-step-pts admin-only" disabled onclick="changePts('pts-correct', -1)">➖</button>
+                        <input type="number" id="pts-correct" value="5" class="pts-input-box" readonly>
+                        <button class="btn-step-pts admin-only" disabled onclick="changePts('pts-correct', 1)">➕</button>
+                    </div>
+                </label>
+
+                <label style="color: #fca5a5;">⚠️ Sai: 
+                    <div class="pts-adjust-group" style="border-color: #fca5a5;">
+                        <button class="btn-step-pts admin-only" style="color:#fca5a5;" disabled onclick="changePts('pts-wrong', -1)">➖</button>
+                        <input type="number" id="pts-wrong" value="-2" class="pts-input-box" style="color: #fde047;" readonly>
+                        <button class="btn-step-pts admin-only" style="color:#fca5a5;" disabled onclick="changePts('pts-wrong', 1)">➕</button>
+                    </div>
+                </label>
+
+                <label style="color:#fde047;">🎯 Chế độ quay:
+                    <select id="spin-mode-select" onchange="toggleSpinMode(this.value)" style="border-color:#eab308; color:#fde047;">
+                        <option value="all" selected>🌐 Quay Toàn Bộ Lớp</option>
+                        <option value="priority">⭐ Chỉ Quay Các Bạn Được Tích Chọn</option>
+                    </select>
+                </label>
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+                <button class="btn-config" style="border-color: #f43f5e; color: #f43f5e;" onclick="openModal('schedule-modal-box')">📅 Lịch 15p</button>
+                <button class="btn-config admin-only" disabled onclick="openModal('student-modal-box')">👥 Lớp (<span id="st-count-label">0</span>)</button>
+                <button class="btn-config admin-only" disabled onclick="openModal('qbank-modal-box')">📚 Câu Hỏi</button>
+                <button class="btn-config" style="border-color: #eab308; color: #eab308;" onclick="openCumulativeModal()">🏆 Điểm Tích Lũy</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="header-title-box">
+        <h1 class="main-title" id="display-main-title">📖 VÒNG QUAY MAY MẮN</h1>
+        <p class="sub-title" id="display-sub-title">Đang tải chủ đề...</p>
+    </div>
+
+    <!-- MÀN HÌNH VÒNG QUAY -->
+    <div id="wheel-screen">
+        <div class="wheel-container">
+            <div class="pointer"></div>
+            <canvas id="wheel-canvas" width="1000" height="1000"></canvas>
+        </div>
+
+        <div style="display: flex; gap: 15px; justify-content: center; align-items: center;">
+            <button class="btn-spin" id="spin-btn" onclick="spinWheel()">🎡 VÒNG QUAY MAY MẮN</button>
+            <button onclick="showResult()" style="background: #38bdf8; border: none; color: #000; padding: 16px 28px; border-radius: 16px; font-weight: 800; font-size: 22px; cursor: pointer;">📊 TỔNG KẾT</button>
+        </div>
+
+        <div class="selected-student-modal" id="student-winner-modal">
+            <h2>🎉 Chỉ định học sinh:</h2>
+            <div><span class="winner-display-name" id="winner-name">---</span></div>
+            <br>
+            <button class="btn-start-q" onclick="goToQuestion()">Mở Câu Hỏi ➔</button>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH CÂU HỎI -->
+    <div id="quiz-body">
+        <div class="status-bar">
+            <span>👤 Học sinh: 
+                <select id="active-student-select" class="student-select-dropdown" onchange="onActiveStudentChanged(this.value)"></select>
+            </span>
+            <span class="timer">⏱ <span id="timer-val">30</span>s</span>
+        </div>
+
+        <div class="lifelines">
+            <button class="btn-life" id="life-50" onclick="use5050()">💥 Trợ giúp 50:50</button>
+            <button class="btn-life" id="life-skip" onclick="useSkip()">🔄 Đổi câu hỏi</button>
+            <button class="btn-fail-penalty" id="btn-penalty" onclick="applyInitialStudentPenalty()">⚠️ Không làm được</button>
+        </div>
+
+        <div class="question-box" id="q-text">Đang tải câu hỏi...</div>
+        <div class="options-grid" id="opt-container"></div>
+        <div class="explanation" id="exp-box"></div>
+
+        <div class="footer-nav" style="text-align:right;">
+            <button class="btn-next" id="btn-next" onclick="backToWheel()">Quay Chọn Bạn Tiếp Theo ➔</button>
+        </div>
+    </div>
+</div>
+
+<!-- FILE JAVASCRIPT LÕI XỬ LÝ -->
+<script src="app.js"></script>
+
+</body>
+</html>
