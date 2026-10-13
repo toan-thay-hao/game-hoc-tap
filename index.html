@@ -1785,24 +1785,62 @@ function exportSessionToWord() {
     if (sessionHistory.length === 0) { alert("⚠️ Buổi học chưa có dữ liệu!"); return; }
     var curIso = document.getElementById("session-date-picker").value || getIsoToday();
 
-    var wordContent = "<html><head><meta charset='utf-8'></head><body>" +
-    "<h1>BÁO CÁO TỔNG KẾT BUỔI HỌC 15 PHÚT</h1>" +
-    "<p><b>Môn/Chủ đề:</b> " + currentTopicKey + "</p>" +
-    "<p><b>Thời gian:</b> Tuần " + currentWeek + " - Ngày " + formatDateFromIso(curIso) + "</p>" +
-    "<hr><table border='1'><tr><th>STT</th><th>Họ và Tên</th><th>Nội dung câu hỏi</th><th>Kết quả</th><th>Điểm</th></tr>";
+    var wordContent = "<html><head><meta charset='utf-8'>" +
+    "<style>" +
+    "body { font-family: 'Times New Roman', Times, serif; font-size: 13pt; line-height: 1.4; padding: 25px; color: #1e293b; }" +
+    ".report-header { text-align: center; margin-bottom: 25px; border-bottom: 2.5px solid #0284c7; padding-bottom: 15px; }" +
+    "h1 { font-size: 18pt; color: #0284c7; margin-bottom: 8px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px; }" +
+    ".sub-info { font-size: 12pt; color: #334155; margin-top: 4px; font-weight: 500; }" +
+    "table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12pt; }" +
+    "th { background-color: #0284c7; color: #ffffff; text-align: center; padding: 10px 8px; border: 1px solid #0284c7; font-weight: bold; font-size: 12pt; }" +
+    "td { padding: 9px 10px; border: 1px solid #cbd5e1; vertical-align: middle; }" +
+    "tr:nth-child(even) { background-color: #f8fafc; }" +
+    ".text-center { text-align: center; }" +
+    ".status-correct { color: #16a34a; font-weight: bold; text-align: center; }" +
+    ".status-wrong { color: #dc2626; font-weight: bold; text-align: center; }" +
+    ".score-tag { font-weight: bold; text-align: center; color: #0284c7; }" +
+    "</style></head><body>" +
+
+    "<div class='report-header'>" +
+    "<h1>BÁO CÁO TỔNG KẾT BUỔI HỌC 15 PHÚT ĐẦU GIỜ </h1>" +
+    "<div class='sub-info'><b>Môn / Chủ đề:</b> " + currentTopicKey + "</div>" +
+    "<div class='sub-info'><b>Thời gian:</b> Tuần " + currentWeek + " &bull; Ngày " + formatDateFromIso(curIso) + "</div>" +
+    "</div>" +
+
+    "<table>" +
+    "<thead><tr>" +
+    "<th style='width: 8%;'>STT</th>" +
+    "<th style='width: 24%;'>Họ và Tên</th>" +
+    "<th style='width: 44%;'>Nội Dung Câu Hỏi</th>" +
+    "<th style='width: 12%;'>Kết Quả</th>" +
+    "<th style='width: 12%;'>Điểm</th>" +
+    "</tr></thead><tbody>";
 
     sessionHistory.forEach(function(item, idx) {
-        wordContent += "<tr><td>" + (idx + 1) + "</td><td><b>" + item.student + "</b></td><td>" + item.q + "</td><td>" + (item.isCorrect ? "Đúng" : "Sai") + "</td><td>" + item.pts + "</td></tr>";
+        var statusClass = item.isCorrect ? "status-correct" : "status-wrong";
+        var statusText = item.isCorrect ? "Đúng" : "Sai";
+        var ptsText = item.pts > 0 ? "+" + item.pts : item.pts;
+
+        wordContent += "<tr>" +
+        "<td class='text-center'>" + (idx + 1) + "</td>" +
+        "<td><b style='color:#0f172a;'>" + item.student + "</b></td>" +
+        "<td>" + item.q + "</td>" +
+        "<td class='" + statusClass + "'>" + statusText + "</td>" +
+        "<td class='score-tag'>" + ptsText + "</td>" +
+        "</tr>";
     });
 
-    wordContent += "</table></body></html>";
+    wordContent += "</tbody></table></body></html>";
+
     var blob = new Blob(['\ufeff', wordContent], { type: 'application/msword' });
     var url = URL.createObjectURL(blob);
     var link = document.createElement("a");
-    link.href = url; link.download = "Bao_Cao_Tuan_" + currentWeek + ".doc";
-    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    link.href = url;
+    link.download = "Bao_Cao_Tuan_" + currentWeek + "_" + formatDateFromIso(curIso).replace(/\//g, "-") + ".doc";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
-
 window.onload = initApp;
 </script>
 
