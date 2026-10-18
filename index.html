@@ -1,0 +1,3063 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Học Tập - V50.0 Auto Schedule & Smart Priority Edition (Enhanced)</title>
+    
+    <!-- MathJax v3 Hỗ trợ Công thức Toán / Văn -->
+    <script>
+    window.MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+      options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'] },
+      startup: {
+        pageReady: () => {
+          return MathJax.startup.defaultPageReady().then(() => {
+            console.log('MathJax v3 đã sẵn sàng');
+          });
+        }
+      }
+    };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <!-- Thư viện Word (.docx), PDF Reader, và html2pdf để xuất file PDF chuẩn A4 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <!-- FIREBASE SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        body { background: linear-gradient(135deg, #0f172a, #1e293b, #0f2027); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 15px; color: #fff; }
+        .quiz-card { background: rgba(15, 23, 42, 0.98); border: 4px solid #38bdf8; border-radius: 24px; width: 100%; max-width: 1600px; padding: 25px 35px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); position: relative; }
+        
+        /* THANH HỆ THỐNG PHÍA TRÊN - NÚT ĐĂNG NHẬP & ĐÓNG BỐ TRÍ CỰC KỲ NHỎ GỌN Ở GÓC BÊN PHẢI */
+        .top-system-bar { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 8px 18px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; position: relative; }
+        .top-system-right-btns { display: flex; gap: 8px; align-items: center; margin-left: auto; }
+        
+        .btn-login-topright { background: #eab308; color: #000; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s; font-size: 13px; white-space: nowrap; }
+        .btn-login-topright:hover { background: #ca8a04; }
+        .btn-close-app-topright { background: #ef4444; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s; font-size: 13px; white-space: nowrap; }
+        .btn-close-app-topright:hover { background: #dc2626; }
+
+        .admin-badge { padding: 4px 12px; border-radius: 6px; font-weight: bold; font-size: 14px; }
+        .badge-student { background: #0284c7; color: #fff; }
+        .badge-admin { background: #22c55e; color: #fff; }
+
+        .top-nav-btns { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #334155; padding-bottom: 12px; }
+        .rule-row { display: flex; align-items: center; gap: 12px; background: #1e293b; padding: 10px 16px; border-radius: 12px; border: 1px solid #475569; flex-wrap: wrap; width: 100%; }
+        .rule-row label { font-weight: bold; font-size: 15px; color: #38bdf8; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+        .rule-row input[type="text"], .rule-row input[type="number"], .rule-row select, .rule-row input[type="time"] { padding: 6px 10px; border-radius: 8px; border: 2px solid #38bdf8; background: #0f172a; color: #fde047; font-weight: bold; font-size: 15px; }
+
+        .time-adjust-group { display: inline-flex; align-items: center; background: #0f172a; border: 2px solid #f43f5e; border-radius: 8px; overflow: hidden; padding: 2px; }
+        .btn-step-time { background: #334155; color: #fca5a5; border: none; padding: 4px 8px; font-size: 13px; font-weight: 900; cursor: pointer; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
+        .btn-step-time:hover:not(:disabled) { background: #e11d48; color: #fff; }
+        .btn-step-time:disabled { opacity: 0.4; cursor: not-allowed; }
+        .time-input-box { border: none !important; background: transparent !important; padding: 2px 6px !important; outline: none; }
+
+        .pts-adjust-group { display: inline-flex; align-items: center; background: #0f172a; border: 2px solid #38bdf8; border-radius: 8px; overflow: hidden; padding: 2px; }
+        .btn-step-pts { background: #334155; color: #38bdf8; border: none; width: 28px; height: 28px; font-size: 16px; font-weight: 900; cursor: pointer; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
+        .btn-step-pts:hover:not(:disabled) { background: #0284c7; color: #fff; }
+        .btn-step-pts:disabled { opacity: 0.4; cursor: not-allowed; }
+        .pts-input-box { width: 48px !important; text-align: center !important; border: none !important; background: transparent !important; padding: 2px !important; }
+
+        .mode-switch-box { display: flex; align-items: center; background: #0f172a; border: 2px solid #a855f7; border-radius: 10px; padding: 4px 8px; gap: 6px; }
+        .mode-switch-box select { background: #a855f7; color: #ffffff; font-size: 15px; font-weight: 800; border: none; border-radius: 6px; padding: 4px 8px; cursor: pointer; outline: none; }
+        .mode-switch-box select.real-mode { background: #22c55e !important; color: #ffffff !important; }
+
+        .custom-date-box { position: relative; display: inline-flex; align-items: center; width: 150px; cursor: pointer; }
+        .custom-date-display { padding: 5px 30px 5px 10px; border-radius: 8px; border: 2px solid #38bdf8; background: #0f172a; color: #fde047; font-weight: bold; font-size: 15px; width: 100%; text-align: left; cursor: pointer; }
+        .hidden-date-input { position: absolute; right: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 5; }
+
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+
+        .btn-config { background: #334155; border: 2px solid #38bdf8; color: #38bdf8; padding: 8px 14px; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 15px; transition: all 0.2s; white-space: nowrap; }
+        .btn-config:hover:not(:disabled) { background: #0284c7; color: #fff; }
+        .btn-config:disabled { opacity: 0.4; cursor: not-allowed; border-color: #64748b; color: #94a3b8; }
+
+        .header-title-box { text-align: center; margin-bottom: 12px; }
+        .main-title { font-size: 38px; color: #f59e0b; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; margin-bottom: 4px; text-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
+        .sub-title { font-size: 24px; color: #38bdf8; font-weight: 700; margin-top: 4px; }
+
+        .config-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.88); backdrop-filter: blur(8px); display: none; justify-content: center; align-items: center; z-index: 100; padding: 15px; }
+        .config-box { background: #1e293b; border: 3px solid #38bdf8; border-radius: 16px; padding: 20px; width: 100%; max-width: 1550px; max-height: 94vh; overflow-y: auto; }
+
+        .tech-login-card { background: linear-gradient(165deg, #0f172a 0%, #1e293b 100%); border: 2px solid #38bdf8; border-radius: 20px; padding: 30px 35px; width: 100%; max-width: 550px; box-shadow: 0 0 40px rgba(56, 189, 248, 0.25), inset 0 0 15px rgba(56, 189, 248, 0.1); position: relative; }
+        .tech-login-header { text-align: center; margin-bottom: 20px; }
+        .tech-badge-sub { font-size: 11px; letter-spacing: 2px; color: #38bdf8; font-weight: 800; text-transform: uppercase; margin-bottom: 4px; }
+        .tech-login-title { font-size: 24px; font-weight: 900; color: #fde047; text-shadow: 0 0 12px rgba(253, 224, 71, 0.4); }
+        
+        .login-tabs { display: flex; background: #0f172a; padding: 4px; border-radius: 10px; border: 1px solid #334155; margin-bottom: 20px; }
+        .login-tab-btn { flex: 1; padding: 8px; border: none; background: transparent; color: #94a3b8; font-weight: bold; font-size: 13px; border-radius: 7px; cursor: pointer; transition: all 0.2s; }
+        .login-tab-btn.active { background: #0284c7; color: #ffffff; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4); }
+
+        .tech-input-group { margin-bottom: 14px; text-align: left; }
+        .tech-input-group label { display: block; font-size: 13px; font-weight: 700; color: #38bdf8; margin-bottom: 6px; }
+        .tech-input-wrapper { position: relative; display: flex; align-items: center; }
+        .tech-input-wrapper input { width: 100%; padding: 12px 40px 12px 14px; background: #0f172a; border: 1.5px solid #334155; border-radius: 10px; color: #fff; font-size: 14px; font-weight: 600; outline: none; transition: border 0.2s; }
+        .tech-input-wrapper input:focus { border-color: #38bdf8; box-shadow: 0 0 10px rgba(56, 189, 248, 0.3); }
+
+        .btn-google-login { width: 100%; padding: 10px; background: #ffffff; color: #000; border: none; border-radius: 10px; font-weight: bold; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; transition: transform 0.15s; margin-bottom: 15px; }
+        .btn-google-login:hover { background: #f1f5f9; transform: translateY(-1px); }
+
+        .captcha-box { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+        .captcha-left { display: flex; align-items: center; gap: 10px; }
+        .captcha-checkbox { width: 20px; height: 20px; cursor: pointer; accent-color: #22c55e; }
+        .captcha-text { font-size: 13px; color: #e2e8f0; font-weight: 600; }
+        .captcha-logo { text-align: right; font-size: 9px; color: #64748b; font-weight: bold; }
+
+        .forgot-pass-link { display: block; text-align: right; font-size: 12px; color: #38bdf8; text-decoration: none; font-weight: 700; margin-top: 4px; margin-bottom: 12px; cursor: pointer; }
+        .forgot-pass-link:hover { text-decoration: underline; color: #fde047; }
+
+        .btn-tech-primary { width: 100%; padding: 12px; background: linear-gradient(90deg, #22c55e, #16a34a); border: none; border-radius: 10px; color: #fff; font-weight: 800; font-size: 15px; cursor: pointer; box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3); transition: all 0.2s; }
+        .btn-tech-primary:hover { transform: translateY(-1.5px); box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4); }
+
+        .pass-strength-bar-bg { width: 100%; height: 6px; background: #0f172a; border-radius: 4px; margin-top: 8px; overflow: hidden; border: 1px solid #334155; }
+        .pass-strength-bar-fill { height: 100%; width: 0%; transition: all 0.3s; }
+        .strength-text-label { font-size: 11px; font-weight: 800; margin-top: 4px; text-align: right; }
+
+        .pass-rules-list { background: #0f172a; padding: 10px 14px; border-radius: 10px; border: 1px solid #334155; margin-top: 10px; margin-bottom: 15px; text-align: left; }
+        .rule-item { font-size: 12px; color: #64748b; display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-weight: 600; }
+        .rule-item.valid { color: #4ade80; }
+        .rule-icon { font-size: 13px; font-weight: 900; }
+
+        .import-panel-box { background: #0f172a; border: 2px dashed #0284c7; border-radius: 16px; padding: 16px 20px; margin-top: 12px; margin-bottom: 15px; }
+        .import-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px; }
+        .import-title { font-size: 16px; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 8px; }
+        .btn-import-file { background: #1e293b; color: #fde047; border: 1.5px solid #eab308; padding: 6px 14px; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-import-file:hover { background: #eab308; color: #000; }
+        .btn-ai-helper { background: linear-gradient(90deg, #a855f7, #7c3aed); color: #fff; border: 1.5px solid #c084fc; padding: 6px 14px; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 10px rgba(168, 85, 247, 0.4); }
+        .btn-ai-helper:hover { transform: scale(1.03); background: linear-gradient(90deg, #9333ea, #6d28d9); }
+
+        .import-textarea { width: 100%; height: 120px; background: #1e293b; border: 1.5px solid #334155; border-radius: 10px; padding: 10px; color: #fff; font-size: 14px; font-weight: 600; outline: none; resize: vertical; margin-bottom: 8px; }
+
+        #wheel-screen { text-align: center; position: relative; }
+        .wheel-container { position: relative; width: 720px; height: 720px; margin: 5px auto 10px; }
+        .pointer { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 26px solid transparent; border-right: 26px solid transparent; border-top: 48px solid #f43f5e; z-index: 10; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6)); }
+        #wheel-canvas { width: 720px; height: 720px; border-radius: 50%; border: 10px solid #38bdf8; box-shadow: 0 0 35px rgba(56, 189, 248, 0.6); background: #0f172a; }
+
+        .btn-spin { background: #eab308; border: none; color: #000; padding: 16px 36px; border-radius: 16px; font-weight: 800; font-size: 26px; cursor: pointer; box-shadow: 0 6px 20px rgba(234, 179, 8, 0.5); }
+        .btn-spin:hover { background: #ca8a04; transform: scale(1.03); }
+        .btn-spin:disabled { background: #475569 !important; color: #94a3b8 !important; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+        .selected-student-modal { background: #1e293b; border: 4px solid #eab308; padding: 20px; border-radius: 20px; margin-top: 10px; display: none; }
+        .selected-student-modal h2 { font-size: 40px; color: #4ade80; margin-bottom: 5px; }
+        .winner-display-name { font-size: 80px !important; color: #fde047 !important; font-weight: 900 !important; text-shadow: 0 0 30px rgba(253, 224, 71, 0.9); display: inline-block; margin-top: 5px; }
+        .btn-start-q { background: #22c55e; border: none; color: #fff; padding: 16px 45px; border-radius: 16px; font-weight: 800; font-size: 28px; cursor: pointer; margin-top: 15px; }
+        
+        #quiz-body { display: none; }
+        .status-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #1e293b; padding: 15px 25px; border-radius: 16px; font-weight: 800; font-size: 38px; }
+        .timer { color: #f43f5e; font-size: 44px; }
+
+        .student-select-dropdown { background: #0f172a; color: #fde047; font-size: 38px; font-weight: 900; border: 3px solid #eab308; border-radius: 12px; padding: 4px 16px; cursor: pointer; outline: none; }
+        .student-select-dropdown option { background: #1e293b; color: #ffffff; font-size: 26px; }
+
+        .lifelines { display: flex; gap: 12px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+        .btn-life { background: #0284c7; border: 2px solid #38bdf8; color: #fff; padding: 12px 20px; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 20px; transition: all 0.2s; }
+        .btn-life:disabled { opacity: 0.4; cursor: not-allowed; border-color: #64748b; }
+        .btn-fail-penalty { background: #dc2626; border: 2px solid #ef4444; color: #ffffff; padding: 12px 20px; border-radius: 12px; cursor: pointer; font-weight: 800; font-size: 20px; }
+        
+        .question-box { background: #1e293b; border-left: 10px solid #38bdf8; padding: 22px 30px; border-radius: 18px; font-size: 34px; line-height: 1.4; margin-bottom: 25px; font-weight: 700; color: #ffffff; text-align: left; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 25px; }
+        .btn-opt { background: #334155; border: 3px solid #475569; color: #ffffff; padding: 18px 24px; border-radius: 16px; text-align: left; font-size: 28px; cursor: pointer; transition: all 0.2s; font-weight: 700; }
+        .btn-opt.correct { background: #166534 !important; border-color: #22c55e !important; color: #fff; }
+        .btn-opt.wrong { background: #991b1b !important; border-color: #ef4444 !important; color: #fff; }
+        
+        .explanation { background: #090d16; border: 4px solid #fde047; padding: 22px 30px; border-radius: 18px; font-size: 32px; color: #ffffff; display: none; margin-bottom: 25px; line-height: 1.5; box-shadow: 0 0 25px rgba(253, 224, 71, 0.3); }
+        .high-contrast-correct { color: #fde047 !important; text-shadow: 0 0 10px #22c55e, 0 0 20px #22c55e; font-size: 38px; font-weight: 900; }
+        .high-contrast-wrong { color: #ff4d4d !important; text-shadow: 0 0 10px #dc2626, 0 0 20px #dc2626; font-size: 38px; font-weight: 900; }
+
+        .btn-next { background: #22c55e; border: none; color: #fff; padding: 16px 40px; border-radius: 14px; font-weight: 800; font-size: 26px; cursor: pointer; display: none; }
+        
+        .result-screen { text-align: center; display: none; padding: 10px 0; }
+        .result-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px; }
+        .res-col { background: #0f172a; border-radius: 16px; padding: 20px; border: 3px solid #334155; }
+        .res-col.correct-col { border-color: #22c55e; }
+        .res-col.wrong-col { border-color: #ef4444; }
+
+        .res-card-item { background: #1e293b; padding: 14px 18px; border-radius: 12px; margin-bottom: 10px; text-align: left; display: flex; justify-content: space-between; align-items: center; border-left: 8px solid #64748b; font-size: 28px; font-weight: bold; cursor: pointer; transition: transform 0.15s; }
+        .res-card-item:hover { transform: scale(1.02); background: #334155; }
+        .res-card-item.correct { border-left-color: #22c55e; }
+        .res-card-item.wrong { border-left-color: #ef4444; }
+
+        .student-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; margin-top: 10px; }
+        .student-table th { background: #1e293b; color: #38bdf8; padding: 14px 12px; text-align: left; font-size: 18px !important; font-weight: 800; border-bottom: 2px solid #334155; }
+        .student-table td { background: #0f172a; padding: 10px 12px; font-size: 18px !important; font-weight: 700; border-top: 1px solid #1e293b; border-bottom: 1px solid #1e293b; }
+        .student-table input[type="text"], .student-table select { background: #1e293b; color: #fff; border: 2px solid #334155; padding: 8px 12px; border-radius: 8px; width: 100%; font-size: 17px !important; font-weight: bold; }
+        .btn-delete-row { background: #ef4444; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 15px; }
+        .btn-delete-row:disabled { opacity: 0.4; cursor: not-allowed; background: #64748b; }
+        
+        .q-edit-box { background: #0f172a; border: 2px solid #334155; border-radius: 12px; padding: 15px; margin-bottom: 12px; }
+        .q-edit-row { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+        .q-opt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+        .opt-input-group { display: flex; align-items: center; gap: 6px; background: #1e293b; padding: 6px 10px; border-radius: 8px; border: 1px solid #475569; }
+
+        .lockdown-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(12px); border-radius: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 50; padding: 20px; text-align: center; }
+        .lockdown-box { background: #1e293b; border: 3px solid #ef4444; padding: 30px 40px; border-radius: 20px; box-shadow: 0 0 40px rgba(239, 68, 68, 0.4); max-width: 650px; }
+        .lockdown-title { font-size: 32px; color: #fca5a5; font-weight: 800; margin-bottom: 12px; }
+        .lockdown-msg { font-size: 22px; color: #fde047; font-weight: bold; margin-bottom: 20px; line-height: 1.4; }
+        .mc-badge { background: #a855f7; color: #fff; padding: 4px 12px; border-radius: 8px; font-weight: bold; font-size: 15px; display: inline-flex; align-items: center; gap: 6px; }
+        
+        .mc-select-box { background: #0f172a; color: #fde047; font-weight: bold; font-size: 16px; border: 2px solid #a855f7; border-radius: 8px; padding: 4px 8px; outline: none; cursor: pointer; }
+        .mc-select-box option { background: #1e293b; color: #fff; font-size: 16px; }
+
+        .schedule-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .schedule-table th, .schedule-table td { border: 1px solid #334155; padding: 10px 14px; text-align: left; }
+        .schedule-table th { background: #0f172a; color: #38bdf8; font-size: 16px; }
+        .schedule-table td { background: #1e293b; color: #fff; font-size: 15px; }
+
+        /* MENU XUẤT BÁO CÁO CỐ ĐỊNH CHỐNG GIẬT */
+        .export-dropdown-container { position: relative; display: inline-block; padding-bottom: 10px; margin-bottom: -10px; }
+        .btn-export-main { background: linear-gradient(90deg, #0284c7, #0d9488); color: #ffffff; border: none; padding: 15px 28px; border-radius: 14px; font-weight: 800; font-size: 22px; cursor: pointer; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4); }
+        .btn-export-main:hover { background: linear-gradient(90deg, #0369a1, #0f766e); }
+        
+        .export-dropdown-menu { 
+            display: none; 
+            position: absolute; 
+            top: 100%; 
+            left: 0; 
+            margin-top: 0px; 
+            background: #0f172a; 
+            border: 2px solid #38bdf8; 
+            border-radius: 12px; 
+            min-width: 300px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.8); 
+            z-index: 999; 
+            overflow: hidden; 
+        }
+        .export-dropdown-menu::before {
+            content: "";
+            position: absolute;
+            top: -15px;
+            left: 0;
+            width: 100%;
+            height: 15px;
+            background: transparent;
+        }
+        .export-dropdown-container:hover .export-dropdown-menu,
+        .export-dropdown-menu:hover { display: block !important; }
+        
+        .export-dropdown-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 14px 18px; background: transparent; color: #ffffff; border: none; text-align: left; font-size: 17px; font-weight: bold; cursor: pointer; transition: background 0.2s; border-bottom: 1px solid #1e293b; }
+        .export-dropdown-item:last-child { border-bottom: none; }
+        .export-dropdown-item:hover { background: #1e293b; color: #38bdf8; }
+    </style>
+</head>
+<body>
+
+<div class="quiz-card">
+
+    <!-- OVERLAY KHÓA GIỜ GIẢNG ĐƯỜNG -->
+    <div id="lockdown-overlay" class="lockdown-overlay" style="display: none;">
+        <div class="lockdown-box">
+            <div class="lockdown-title">🔒 ĐỀ THI CHƯA ĐẾN GIỜ MỞ</div>
+            <div class="lockdown-msg" id="lockdown-msg-text">Mở lúc 06:45:00</div>
+            <p style="color:#94a3b8; font-size:16px; margin-bottom:20px;">MC Điều hành & Học sinh vui lòng chờ đúng giờ hệ thống để bắt đầu buổi học.</p>
+            <button onclick="openModal('admin-login-modal')" style="background:#22c55e; color:#fff; border:none; padding:12px 24px; border-radius:12px; font-weight:bold; font-size:18px; cursor:pointer;">🔑 Nhập Mật Khẩu Admin (<span class="lbl-teacher-gender-inline">Thầy (cô) chủ nhiệm</span>) Để Mở Cưỡng Chế / Sửa Giờ</button>
+        </div>
+    </div>
+
+    <!-- THANH HỆ THỐNG PHÍA TRÊN - NÚT ĐĂNG NHẬP & NÚT ĐÓNG BỐ TRÍ CỰC KỲ NHỎ GỌN BÊN PHẢI -->
+    <div class="top-system-bar">
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <span id="role-badge" class="admin-badge badge-student">👤 QUYỀN HỌC SINH</span>
+            <span class="mc-badge">🎙️ MC Điều Hành: 
+                <select id="mc-top-dropdown" class="mc-select-box" onchange="saveMCSelection(this.value)"></select>
+            </span>
+            <!-- Chọn Lớp & Năm Học -->
+            <span style="background:#1e293b; padding:4px 10px; border-radius:8px; border:1px solid #38bdf8; font-size:14px; font-weight:bold; color:#fde047;">
+                🏫 Lớp: 
+                <input type="text" id="class-name-input" value="7A6" onchange="saveClassAndYearInfo()" style="width:55px; background:#0f172a; color:#38bdf8; border:1px solid #38bdf8; border-radius:6px; font-weight:bold; text-align:center; padding:2px;">
+                &nbsp;📅 Năm Học: 
+                <select id="school-year-select" onchange="saveClassAndYearInfo()" style="background:transparent; color:#fde047; border:none; font-weight:bold; cursor:pointer; outline:none;">
+                    <option value="2026-2027" class="bg-slate-800">2026 - 2027</option>
+                    <option value="2025-2026" class="bg-slate-800">2025 - 2026</option>
+                    <option value="2027-2028" class="bg-slate-800">2027 - 2028</option>
+                </select>
+                <button onclick="saveClassAndYearInfo()" title="Lưu thông tin Lớp & Năm học" style="background:#22c55e; color:#fff; border:none; border-radius:4px; padding:2px 6px; font-size:12px; cursor:pointer; font-weight:bold; margin-left:4px;">💾 Lưu</button>
+                <button onclick="clearClassDataInfo()" title="Xóa dữ liệu cấu hình Lớp & Năm học" style="background:#ef4444; color:#fff; border:none; border-radius:4px; padding:2px 6px; font-size:12px; cursor:pointer; font-weight:bold; margin-left:2px;">🗑️ Xóa</button>
+            </span>
+        </div>
+        
+        <!-- BỐ TRÍ NÚT ĐĂNG NHẬP VÀ NÚT ĐÓNG NHỎ GỌN TẠI GÓC PHẢI -->
+        <div class="top-system-right-btns">
+            <button id="btn-admin-login" class="btn-login-topright" onclick="openModal('admin-login-modal')">🔑 Đăng Nhập Admin (<span id="lbl-teacher-gender">Thầy (cô) chủ nhiệm</span>)</button>
+            <button id="btn-change-pass" onclick="openModal('change-pass-modal')" style="background:#0284c7; color:#fff; border:none; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer; display:none; font-size:13px; white-space:nowrap;">⚙️ Đổi Mật Khẩu</button>
+            <button id="btn-admin-logout" onclick="logoutAdmin()" style="background:#dc2626; color:#fff; border:none; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer; display:none; font-size:13px; white-space:nowrap;">🔒 Đăng Xuất Admin</button>
+            <button onclick="closeApp()" class="btn-close-app-topright">❌ Đóng</button>
+        </div>
+    </div>
+
+    <!-- THANH CẤU HÌNH & ĐIỀU HÀNH THÔNG MINH -->
+    <div class="top-nav-btns">
+        <div class="rule-row">
+            <div class="mode-switch-box">
+                <label style="color:#a855f7; margin:0;">⚙️ Chế độ:</label>
+                <select id="game-mode-select" onchange="toggleGameMode(this.value)">
+                    <option value="test" selected>🧪 Thi Thử (Luyện Tập)</option>
+                    <option value="real">🎯 Thi Thật (Tính Điểm)</option>
+                </select>
+            </div>
+
+            <label style="color:#f43f5e;">⏱️ Giờ mở đề:
+                <div class="time-adjust-group">
+                    <button class="btn-step-time admin-only" disabled onclick="adjustLockTime(-1)" title="Lùi 1 phút">➖ 1p</button>
+                    <input type="time" id="lock-time-input" value="06:40" class="time-input-box admin-only" disabled oninput="saveLockTime(this.value)" onchange="saveLockTime(this.value)">
+                    <button class="btn-step-time admin-only" disabled onclick="adjustLockTime(1)" title="Tăng 1 phút">➕ 1p</button>
+                </div>
+            </label>
+
+           <label>📅 Tuần:
+                <select id="week-select" onchange="onWeekChanged(this.value)" style="width:100px;"></select>
+            </label>
+
+            <label style="color:#22c55e;">📆 Thứ:
+                <select id="day-of-week-select" onchange="onDayOfWeekDropdownChanged(this.value)" style="width:110px; color:#22c55e;">
+                    <option value="2">Thứ 2</option>
+                    <option value="3">Thứ 3</option>
+                    <option value="4">Thứ 4</option>
+                    <option value="5">Thứ 5</option>
+                    <option value="6">Thứ 6</option>
+                    <option value="7">Thứ 7</option>
+                    <option value="1">Chủ Nhật</option>
+                </select>
+            </label>
+
+            <label>📅 Ngày:
+                <div class="custom-date-box" onclick="triggerDatePicker('session-date-picker')">
+                    <input type="text" id="session-date-display" class="custom-date-display" readonly>
+                    <span style="position:absolute; right:8px; pointer-events:none;">📅</span>
+                    <input type="date" id="session-date-picker" class="hidden-date-input" onchange="onDateChanged(this.value)">
+                </div>
+            </label>
+
+            <label style="flex-grow:1;">📚 Môn / Chủ đề: 
+                <select id="topic-select" onchange="switchTopicPreset()" style="width:100%; min-width:240px;"></select>
+            </label>
+        </div>
+
+        <div class="rule-row" style="justify-content: space-between;">
+            <div style="display:flex; align-items:center; gap:20px;">
+                <label>🎯 Đúng (Cộng Điểm): 
+                    <div class="pts-adjust-group">
+                        <button class="btn-step-pts admin-only" disabled onclick="changePts('pts-correct', -1)">➖</button>
+                        <input type="number" id="pts-correct" value="5" class="pts-input-box" readonly>
+                        <button class="btn-step-pts admin-only" disabled onclick="changePts('pts-correct', 1)">➕</button>
+                    </div>
+                </label>
+
+                <label style="color: #fca5a5;">⚠️ Sai (Trừ Điểm): 
+                    <div class="pts-adjust-group" style="border-color: #fca5a5;">
+                        <button class="btn-step-pts admin-only" style="color:#fca5a5;" disabled onclick="changePts('pts-wrong', -1)">➖</button>
+                        <input type="number" id="pts-wrong" value="-2" class="pts-input-box" style="color: #fde047;" readonly>
+                        <button class="btn-step-pts admin-only" style="color:#fca5a5;" disabled onclick="changePts('pts-wrong', 1)">➕</button>
+                    </div>
+                </label>
+
+                <label style="color:#fde047;">🎯 Chế độ quay:
+                    <select id="spin-mode-select" onchange="toggleSpinMode(this.value)" style="border-color:#eab308; color:#fde047;">
+                        <option value="all" selected>🌐 Quay Toàn Bộ Lớp</option>
+                        <option value="priority">⭐ Chỉ Quay Các Bạn Được Tích Chọn</option>
+                    </select>
+                </label>
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+                <button class="btn-config" style="border-color: #f43f5e; color: #f43f5e;" onclick="openModal('schedule-modal-box')">📅 Lịch 15p Đầu Giờ</button>
+                <button class="btn-config admin-only" disabled onclick="openModal('student-modal-box')">👥 Quản Lý Lớp (<span id="st-count-label">0</span> Bạn)</button>
+                <button class="btn-config admin-only" disabled onclick="openModal('qbank-modal-box')">📚 Quản Lý Câu Hỏi</button>
+                <button class="btn-config" style="border-color: #eab308; color: #eab308;" onclick="openCumulativeScoresModal()">🏆 Bảng Điểm Tích Lũy</button>
+                <button class="btn-config" style="border-color: #a855f7; color: #a855f7;" onclick="openHistoryModal()">📹 Nhật Ký Buổi Học</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="header-title-box">
+        <h1 class="main-title" id="display-main-title">📖 VÒNG QUAY MAY MẮN - NGỮ VĂN 7</h1>
+        <p class="sub-title" id="display-sub-title">Chủ đề: Khúc nhạc tâm hồn</p>
+    </div>
+
+    <!-- Wheel Screen -->
+    <div id="wheel-screen">
+        <div class="wheel-container">
+            <div class="pointer"></div>
+            <canvas id="wheel-canvas" width="1000" height="1000"></canvas>
+        </div>
+
+        <div style="display: flex; gap: 15px; justify-content: center; align-items: center; flex-wrap:wrap;">
+            <button class="btn-spin" id="spin-btn" onclick="spinWheel()">🎡 VÒNG QUAY MAY MẮN</button>
+            <button id="btn-test-drive" onclick="runProgramTestDrive()" class="admin-only" disabled style="background:#a855f7; border:none; color:#fff; padding:16px 24px; border-radius:16px; font-weight:800; font-size:20px; cursor:pointer;">🧪 Chạy Thử Chương Trình</button>
+            <button onclick="showResult()" style="background: #38bdf8; border: none; color: #000; padding: 16px 28px; border-radius: 16px; font-weight: 800; font-size: 22px; cursor: pointer;">📊 TỔNG KẾT BUỔI HỌC NÀY</button>
+        </div>
+
+        <div class="selected-student-modal" id="student-winner-modal">
+            <h2>🎉 Chỉ định học sinh:</h2>
+            <div><span class="winner-display-name" id="winner-name">---</span></div>
+            <br>
+            <button class="btn-start-q" onclick="goToQuestion()">Mở Câu Hỏi ➔</button>
+        </div>
+    </div>
+
+    <!-- MODAL LỊCH SINH HOẠT 15 PHÚT -->
+    <div class="config-modal" id="schedule-modal-box">
+        <div class="config-box" style="max-width: 1200px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #334155; padding-bottom:8px;">
+                <h2 style="color: #f43f5e; font-size: 26px;">📅 Lịch Sinh Hoạt 15 Phút Đầu Giờ Theo Tuần</h2>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <label style="color:#fde047; font-weight:bold; font-size:16px;">Đang xem/sửa:</label>
+                    <select id="schedule-week-select" onchange="onScheduleWeekSelectChanged(this.value)" style="padding:6px 12px; border-radius:8px; border:2px solid #38bdf8; background:#0f172a; color:#fde047; font-weight:bold; font-size:16px; cursor:pointer;"></select>
+                </div>
+            </div>
+            
+            <div class="import-panel-box" style="margin-top:10px;">
+                <div class="import-panel-header">
+                    <div class="import-title">📥 TẢI LỊCH TỪ FILE WORD (.DOCX) HOẶC PDF CHO TUẦN NÀY:</div>
+                    <div style="display:flex; gap:10px;">
+                        <label class="btn-import-file">
+                            📄 Chọn File Word (.docx)
+                            <input type="file" accept=".docx" style="display:none;" onchange="importScheduleFromWord(this)">
+                        </label>
+                        <label class="btn-import-file">
+                            📕 Chọn File PDF (.pdf)
+                            <input type="file" accept=".pdf" style="display:none;" onchange="importScheduleFromPDF(this)">
+                        </label>
+                    </div>
+                </div>
+                <textarea id="schedule-raw-textarea" class="import-textarea" style="height:70px;" placeholder="Dán nội dung lịch sinh hoạt từ máy tính tại đây..."></textarea>
+                <button onclick="parseScheduleText()" style="background:#0284c7; color:#fff; border:none; padding:8px 18px; border-radius:8px; font-weight:bold; cursor:pointer;">⚡ PHÂN TÍCH VÀ ĐƯA VÀO BẢNG</button>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px; margin-bottom:8px;">
+                <h3 style="color:#38bdf8; font-size:20px;">📋 Lịch Phân Công Tuần <span id="schedule-modal-week-label" style="color:#fde047;">6</span>:</h3>
+                <button onclick="copyPreviousWeekSchedule()" style="background:#a855f7; color:#fff; border:none; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:13px;">📋 Sao chép từ tuần trước</button>
+            </div>
+
+            <table class="schedule-table">
+                <thead>
+                    <tr>
+                        <th style="width:12%;">Thứ Trong Tuần</th>
+                        <th style="width:28%;">Chọn Môn Sinh Hoạt (Menu Sổ Xuống)</th>
+                        <th style="width:35%;">Chủ Đề Sinh Hoạt / Ghi Chú</th>
+                        <th style="width:25%; color:#fde047;">🎙️ MC Điều Hành (Cán Sự)</th>
+                    </tr>
+                </thead>
+                <tbody id="schedule-table-body"></tbody>
+            </table>
+
+            <div class="modal-btn-row" style="display:flex; justify-content:space-between; margin-top:15px;">
+                <button onclick="saveScheduleForWeek(editingScheduleWeek)" style="background:#22c55e; color:#fff; border:none; padding:10px 20px; border-radius:8px; font-weight:bold; font-size:16px; cursor:pointer;">💾 LƯU LỊCH TUẦN NÀY</button>
+                <div style="display:flex; gap:10px;">
+                    <button onclick="applyTodayScheduleForce()" style="background:#0284c7; color:#fff; border:none; padding:10px 18px; border-radius:8px; font-weight:bold; cursor:pointer;">🔄 Kích Hoạt Lịch Ngay Lúc Này</button>
+                    <button class="btn-close-modal" onclick="closeModal('schedule-modal-box')" style="background:#64748b; color:#fff; border:none; padding:10px 18px; border-radius:8px; font-weight:bold; cursor:pointer;">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL ĐĂNG NHẬP QUẢN TRỊ -->
+    <div class="config-modal" id="admin-login-modal">
+        <div class="tech-login-card">
+            <button onclick="closeModal('admin-login-modal')" style="position:absolute; right:15px; top:15px; background:none; border:none; color:#64748b; font-size:20px; cursor:pointer; font-weight:bold;">✕</button>
+            
+            <div class="tech-login-header">
+                <div class="tech-badge-sub">🛡️ CYBER SECURITY AUTHENTICATION</div>
+                <div class="tech-login-title">🔐 ĐĂNG NHẬP QUẢN TRỊ (<span id="modal-gender-title">THẦY (CÔ) CHỦ NHIỆM</span>)</div>
+            </div>
+
+            <div style="background:#0f172a; border:1px solid #334155; padding:12px; border-radius:10px; margin-bottom:15px;">
+                <label style="font-size:14px; font-weight:bold; color:#38bdf8; display:block; margin-bottom:8px;">
+                    Thầy (cô) chủ nhiệm.
+                </label>
+                <div style="display:flex; gap:8px;">
+                    <select id="teacher-gender-select" onchange="saveTeacherGender(this.value)" style="background:#1e293b; color:#fde047; font-weight:bold; border:1px solid #38bdf8; border-radius:6px; padding:6px;">
+                        <option value="Thầy (cô) chủ nhiệm">Thầy (cô) chủ nhiệm</option>
+                        <option value="Thầy">Thầy</option>
+                        <option value="Cô">Cô</option>
+                    </select>
+                    <input type="text" id="teacher-name-input" placeholder="Nhập tên Thầy (cô) chủ nhiệm..." onchange="saveTeacherName(this.value)" style="flex:1; background:#1e293b; color:#fff; border:1px solid #38bdf8; border-radius:6px; padding:6px 10px; font-size:14px; font-weight:bold;">
+                </div>
+            </div>
+
+            <div class="login-tabs">
+                <button class="login-tab-btn active" id="tab-pass-btn" onclick="switchLoginTab('pass')">🔑 Mật Khẩu Admin</button>
+                <button class="login-tab-btn" id="tab-email-btn" onclick="switchLoginTab('email')">📧 Email / Số ĐT</button>
+            </div>
+
+            <button class="btn-google-login" onclick="loginWithGoogleMock()">
+                <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+                Tiếp tục với Google SSO
+            </button>
+
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
+                <div style="flex:1; height:1px; background:#334155;"></div>
+                <span style="font-size:11px; color:#64748b; font-weight:bold;">HOẶC DÙNG TÀI KHOẢN</span>
+                <div style="flex:1; height:1px; background:#334155;"></div>
+            </div>
+
+            <div id="form-login-pass">
+                <div class="tech-input-group">
+                    <label>🔑 Mật Khẩu Quản Trị Viên (<span class="lbl-teacher-gender-inline">Thầy (cô) chủ nhiệm</span>):</label>
+                    <div class="tech-input-wrapper">
+                        <input type="password" id="admin-pass-input" placeholder="Nhập mã truy cập bảo mật...">
+                        <button class="toggle-password-btn" style="position:absolute; right:12px; background:none; border:none; color:#64748b; cursor:pointer;" onclick="toggleShowPassword('admin-pass-input', this)">👁️</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="form-login-email" style="display:none;">
+                <div class="tech-input-group">
+                    <label>📱 Email hoặc Số điện thoại <span class="lbl-teacher-gender-inline">Thầy (cô) chủ nhiệm</span>:</label>
+                    <div class="tech-input-wrapper">
+                        <input type="text" id="tech-account-input" placeholder="teacher@school.edu.vn hoặc 098x...">
+                    </div>
+                </div>
+                <div class="tech-input-group">
+                    <label>🔒 Mật khẩu cá nhân:</label>
+                    <div class="tech-input-wrapper">
+                        <input type="password" id="tech-userpass-input" placeholder="••••••••">
+                    </div>
+                </div>
+            </div>
+
+            <a class="forgot-pass-link" onclick="openForgotPassModal()">❓ Quên mật khẩu hoặc mã PIN?</a>
+
+            <div class="captcha-box">
+                <div class="captcha-left">
+                    <input type="checkbox" id="captcha-check" class="captcha-checkbox">
+                    <label for="captcha-check" class="captcha-text">Tôi không phải là người máy</label>
+                </div>
+                <div class="captcha-logo">
+                    🛡️ reCAPTCHA<br><span style="font-size:7px; font-weight:normal;">Bảo mật & Điều khoản</span>
+                </div>
+            </div>
+
+            <button class="btn-tech-primary" onclick="verifyAdminLoginTech()">⚡ XÁC NHẬN ĐĂNG NHẬP</button>
+        </div>
+    </div>
+
+    <!-- Modal ĐỔI MẬT KHẨU -->
+    <div class="config-modal" id="change-pass-modal">
+        <div class="tech-login-card">
+            <button onclick="closeModal('change-pass-modal')" style="position:absolute; right:15px; top:15px; background:none; border:none; color:#64748b; font-size:20px; cursor:pointer; font-weight:bold;">✕</button>
+
+            <div class="tech-login-header">
+                <div class="tech-badge-sub">⚙️ PASSWORD MANAGEMENT</div>
+                <div class="tech-login-title" style="color:#38bdf8;">⚙️ ĐỔI MẬT KHẨU QUẢN TRỊ</div>
+            </div>
+
+            <div class="tech-input-group">
+                <label>🔓 Mật khẩu hiện tại (Cũ):</label>
+                <div class="tech-input-wrapper">
+                    <input type="password" id="old-pass-input" placeholder="Nhập mật khẩu đang dùng...">
+                    <button class="toggle-password-btn" style="position:absolute; right:12px; background:none; border:none; color:#64748b; cursor:pointer;" onclick="toggleShowPassword('old-pass-input', this)">👁️</button>
+                </div>
+            </div>
+
+            <div class="tech-input-group">
+                <label>🔑 Mật khẩu mới (Cực Mạnh):</label>
+                <div class="tech-input-wrapper">
+                    <input type="password" id="new-pass-input" onkeyup="checkPasswordStrength(this.value)" placeholder="Nhập mật khẩu mới...">
+                    <button class="toggle-password-btn" style="position:absolute; right:12px; background:none; border:none; color:#64748b; cursor:pointer;" onclick="toggleShowPassword('new-pass-input', this)">👁️</button>
+                </div>
+                
+                <div class="pass-strength-bar-bg">
+                    <div class="pass-strength-bar-fill" id="pass-strength-bar"></div>
+                </div>
+                <div class="strength-text-label" id="pass-strength-label" style="color:#64748b;">Độ mạnh: Chưa nhập</div>
+            </div>
+
+            <div class="tech-input-group">
+                <label>🔁 Xác nhận mật khẩu mới:</label>
+                <div class="tech-input-wrapper">
+                    <input type="password" id="confirm-pass-input" placeholder="Nhập lại mật khẩu mới...">
+                    <button class="toggle-password-btn" style="position:absolute; right:12px; background:none; border:none; color:#64748b; cursor:pointer;" onclick="toggleShowPassword('confirm-pass-input', this)">👁️</button>
+                </div>
+            </div>
+
+            <div class="pass-rules-list">
+                <div style="font-size:11px; color:#38bdf8; font-weight:800; margin-bottom:6px; letter-spacing:1px;">📋 TIÊU CHÍ MẬT KHẨU MẠNH:</div>
+                <div class="rule-item" id="rule-length"><span class="rule-icon" id="icon-length">❌</span> 📏 Tối thiểu 8 ký tự</div>
+                <div class="rule-item" id="rule-upper"><span class="rule-icon" id="icon-upper">❌</span> 🔠 Có ít nhất 1 chữ hoa (A-Z)</div>
+                <div class="rule-item" id="rule-number"><span class="rule-icon" id="icon-number">❌</span> 🔢 Có ít nhất 1 chữ số (0-9)</div>
+                <div class="rule-item" id="rule-special"><span class="rule-icon" id="icon-special">❌</span> 🔣 Có ít nhất 1 ký tự đặc biệt (@#$%!...)</div>
+            </div>
+
+            <div style="display:flex; gap:10px;">
+                <button class="btn-tech-primary" style="background: linear-gradient(90deg, #0284c7, #0369a1);" onclick="saveNewPassword()">💾 LƯU MẬT KHẨU MỚI</button>
+                <button onclick="closeModal('change-pass-modal')" style="padding:12px 20px; background:#334155; color:#fff; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Hủy</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal QUÊN MẬT KHẨU -->
+    <div class="config-modal" id="forgot-pass-modal">
+        <div class="tech-login-card" style="max-width: 440px;">
+            <div class="tech-login-header">
+                <div class="tech-badge-sub">🔑 ACCOUNT RECOVERY</div>
+                <div class="tech-login-title" style="color:#38bdf8;">KHÔI PHỤC MẬT KHẨU</div>
+            </div>
+            <p style="font-size:13px; color:#94a3b8; margin-bottom:15px; text-align:center;">Vui lòng nhập Email hoặc SĐT đã đăng ký để nhận mã khôi phục OTP:</p>
+            
+            <div class="tech-input-group">
+                <div class="tech-input-wrapper">
+                    <input type="text" id="recovery-email-input" placeholder="Nhập email hoặc SĐT...">
+                </div>
+            </div>
+
+            <button class="btn-tech-primary" style="background: linear-gradient(90deg, #0284c7, #0369a1);" onclick="sendRecoveryOTP()">📨 Gửi Mã OTP Xác Minh</button>
+            <button onclick="closeModal('forgot-pass-modal')" style="width:100%; margin-top:8px; padding:10px; background:#334155; color:#fff; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Quay lại</button>
+        </div>
+    </div>
+
+    <!-- Modal Quản Lý Học Sinh -->
+    <div class="config-modal" id="student-modal-box">
+        <div class="config-box">
+            <h2 style="color: #38bdf8; font-size: 26px; border-bottom: 2px solid #334155; padding-bottom: 8px;">👥 Quản Lý Học Sinh Lớp <span class="lbl-class-name-inline" style="color:#fde047;">7A6</span>, Lực Học & Tùy Chỉnh Tên Vòng Quay</h2>
+            
+            <div class="import-panel-box" style="margin-top:10px;">
+                <div class="import-panel-header">
+                    <div class="import-title">📥 NHẬP DANH SÁCH LỚP TỪ FILE (TỰ ĐỘNG NHẬN DIỆN LỰC HỌC & RÈN LUYỆN):</div>
+                    <div style="display:flex; gap:10px;">
+                        <label class="btn-import-file">
+                            📄 Chọn File Word (.docx)
+                            <input type="file" accept=".docx" style="display:none;" onchange="importStudentsFromWord(this)">
+                        </label>
+                        <label class="btn-import-file">
+                            📕 Chọn File PDF (.pdf)
+                            <input type="file" accept=".pdf" style="display:none;" onchange="importStudentsFromPDF(this)">
+                        </label>
+                    </div>
+                </div>
+                <textarea id="student-text-import" placeholder="Hoặc dán danh sách tên học sinh tại đây (mỗi tên một dòng)..." style="height: 70px;"></textarea>
+                <div style="display:flex; justify-content:space-between; margin-top:6px;">
+                    <button onclick="parseTextToTable()" style="background:#0284c7; color:#fff; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:bold;">🔄 Chuyển Văn Bản Thành Bảng</button>
+                    <button id="btn-delete-all-students" class="admin-only" disabled onclick="removeAllStudents()" style="background:#ef4444; color:#fff; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:bold;">🗑️ Xóa Tất Cả Danh Sách</button>
+                </div>
+            </div>
+
+            <table class="student-table" id="student-table">
+                <thead>
+                    <tr>
+                        <th style="width: 5%; text-align:center;">STT</th>
+                        <th style="width: 25%;">Họ và Tên Đầy Đủ</th>
+                        <th style="width: 22%; color:#fde047;">🎡 Tên Hiện Trên Vòng Quay</th>
+                        <th style="width: 18%; text-align:center;">Lực Học (Tùy Chọn)</th>
+                        <th style="width: 14%; text-align:center;">Rèn Luyện (Tùy Chọn)</th>
+                        <th style="width: 8%; text-align:center; color:#fde047;">🎯 Ưu Tiên</th>
+                        <th style="width: 8%; text-align:center;">Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody id="student-table-body"></tbody>
+            </table>
+
+            <div class="modal-btn-row" style="display:flex; justify-content:space-between; margin-top:15px;">
+                <div style="display:flex; gap:10px;">
+                    <button onclick="addNewStudent()" style="background:#0284c7; color:#fff; border:none; padding:10px 18px; border-radius:8px; font-weight:bold; cursor:pointer;">➕ Thêm Học Sinh Mới</button>
+                    <button onclick="resetDefaultStudents()" style="background: #eab308; color:#000; border:none; padding:10px 18px; border-radius:8px; font-weight:bold; cursor:pointer;">⚡ Nạp Lại Danh Sách Mặc Định</button>
+                </div>
+                <div>
+                    <button class="btn-save-config" onclick="saveStudentsFromTable()" style="background:#22c55e; color:#fff; border:none; padding:10px 22px; border-radius:8px; font-weight:bold; font-size:16px; cursor:pointer; margin-right:10px;">💾 LƯU DANH SÁCH LỚP</button>
+                    <button class="btn-close-modal" onclick="closeModal('student-modal-box')" style="background:#64748b; color:#fff; border:none; padding:10px 18px; border-radius:8px; font-weight:bold; cursor:pointer;">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL QUẢN LÝ CÂU HỎI -->
+    <div class="config-modal" id="qbank-modal-box">
+        <div class="config-box">
+            <h2 style="color: #f59e0b; font-size: 26px; border-bottom: 2px solid #334155; padding-bottom: 8px;">📚 Quản Lý Tất Cả Câu Hỏi, 4 Đáp Án & Thời Gian</h2>
+            
+            <div style="background: #0f172a; padding: 15px; border-radius: 12px; margin-top: 10px; border: 2px solid #38bdf8; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                <div>
+                    <label style="font-weight:bold; color:#fde047; font-size:13px;">Tuần:</label>
+                    <select id="qbank-week-select" style="padding:6px; background:#1e293b; color:#fff; border:1px solid #38bdf8; border-radius:6px; font-weight:bold;"></select>
+                </div>
+                <div>
+                    <label style="font-weight:bold; color:#fde047; font-size:13px;">Thứ:</label>
+                    <select id="qbank-day-select" style="padding:6px; background:#1e293b; color:#fff; border:1px solid #38bdf8; border-radius:6px; font-weight:bold;">
+                        <option value="2">Thứ 2</option><option value="3">Thứ 3</option><option value="4">Thứ 4</option>
+                        <option value="5">Thứ 5</option><option value="6">Thứ 6</option><option value="7">Thứ 7</option>
+                    </select>
+                </div>
+                <div style="flex:1;">
+                    <label style="font-weight:bold; color:#38bdf8; font-size:13px;">📌 Tên Môn Học / Chủ Đề:</label>
+                    <input type="text" id="topic-title-input" value="Ngữ Văn 7 - Khúc nhạc tâm hồn" style="width:100%; padding:6px 10px; background:#1e293b; color:#fde047; font-weight:bold; border:1px solid #334155; border-radius:8px;">
+                </div>
+            </div>
+
+            <div style="background:#1e293b; border:1.5px dashed #a855f7; border-radius:12px; padding:12px 16px; margin-top:10px; display:flex; flex-direction:column; gap:10px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <span style="font-size:14px; font-weight:bold; color:#c084fc;">📋 SAO CHÉP BÀI CŨ:</span>
+                        <label style="font-size:13px; color:#fff; font-weight:bold;">Từ Tuần:</label>
+                        <select id="copy-src-week-select" onchange="updateCopyTopicPreview()" style="padding:4px 8px; background:#0f172a; color:#fde047; border:1px solid #a855f7; border-radius:6px; font-weight:bold;"></select>
+                        <label style="font-size:13px; color:#fff; font-weight:bold;">Từ Thứ:</label>
+                        <select id="copy-src-day-select" onchange="updateCopyTopicPreview()" style="padding:4px 8px; background:#0f172a; color:#22c55e; border:1px solid #a855f7; border-radius:6px; font-weight:bold;">
+                            <option value="2">Thứ 2</option><option value="3">Thứ 3</option><option value="4">Thứ 4</option>
+                            <option value="5">Thứ 5</option><option value="6">Thứ 6</option><option value="7">Thứ 7</option>
+                        </select>
+                    </div>
+                    <button onclick="copyTopicFromOldWeekDay()" style="background:linear-gradient(90deg, #a855f7, #7c3aed); color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:14px; box-shadow:0 2px 8px rgba(168,85,247,0.4);">
+                        ⚡ Sao chép Chủ đề & Câu hỏi sang Tuần/Thứ hiện tại
+                    </button>
+                </div>
+                <div style="display:flex; align-items:center; gap:12px; background:#0f172a; padding:8px 12px; border-radius:8px; border:1px solid #334155; flex-wrap:wrap;">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span style="font-size:13px; color:#94a3b8; font-weight:bold;">👀 Chủ đề xem trước:</span>
+                        <button id="btn-copy-preview-topic" onclick="applyPreviewTopicToTitle()" style="background:#0284c7; color:#fff; border:1px solid #38bdf8; border-radius:6px; padding:4px 10px; font-size:13px; font-weight:bold; cursor:pointer;" title="Bấm vào để sử dụng tên chủ đề này">
+                            ---
+                        </button>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px; border-left:1px solid #334155; padding-left:12px;">
+                        <span style="font-size:13px; color:#fde047; font-weight:bold;">📊 Thống kê sử dụng lặp lại:</span>
+                        <span id="topic-repeat-count-badge" style="background:#a855f7; color:#fff; padding:2px 8px; border-radius:12px; font-size:12px; font-weight:900;">0 lần</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="import-panel-box">
+                <div class="import-panel-header">
+                    <div class="import-title">📥 NHẬP ĐỀ TỰ ĐỘNG TỪ FILE / TRỢ LÝ AI (CHUẨN SƯ PHẠM & PHÂN PHỐI CHƯƠNG TRÌNH):</div>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                        <button class="btn-ai-helper" onclick="openAINotebookHelper()">
+                            🤖 Trợ Lý AI Dò PPCT & Chuẩn Sư Phạm (NotebookLM)
+                        </button>
+                        <label class="btn-import-file">
+                            📄 File Word (.docx)
+                            <input type="file" id="word-file-input" accept=".docx" style="display:none;" onchange="importFromWord(this)">
+                        </label>
+                        <label class="btn-import-file">
+                            📕 File PDF (.pdf)
+                            <input type="file" id="pdf-file-input" accept=".pdf" style="display:none;" onchange="importFromPDF(this)">
+                        </label>
+                    </div>
+                </div>
+
+                <div style="background:#0f172a; padding:10px 14px; border-radius:10px; border:1px solid #a855f7; margin-bottom:12px;">
+                    <label style="color:#c084fc; font-weight:bold; font-size:13px;">💬 Yêu cầu bổ sung tùy chỉnh cho AI (Linh hoạt thêm lệnh tạo đề):</label>
+                    <input type="text" id="ai-custom-prompt-input" placeholder="Ví dụ: Cho thêm 3 câu vận dụng thực tế gần gũi với học sinh..." style="width:100%; padding:6px 10px; background:#1e293b; color:#fff; border:1px solid #334155; border-radius:6px; font-size:13px; margin-top:4px;">
+                </div>
+
+                <div style="display:flex; gap:10px; margin-bottom:12px; align-items:center; background:#0f172a; padding:10px 14px; border-radius:10px; border:2px solid #38bdf8;">
+                    <label style="color:#fde047; font-weight:bold; white-space:nowrap; font-size:15px;">🔗 Link Bộ Đề Online:</label>
+                    <input type="text" id="qbank-url-input" placeholder="Dán đường link bộ đề (Google Doc, File text, Web bài tập...)" style="flex:1; padding:8px 12px; background:#1e293b; color:#fff; border:1px solid #334155; border-radius:8px; font-size:14px; outline:none;">
+                    <button onclick="fetchQuestionsFromLink()" style="background:#22c55e; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:14px; white-space:nowrap;">⚡ TẢI ĐỀ TỪ LINK</button>
+                </div>
+
+                <textarea id="raw-qbank-import-input" class="import-textarea" placeholder="Dán văn bản câu hỏi từ Word, PDF hoặc từ Trợ Lý AI vào đây..."></textarea>
+
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:12px; color:#94a3b8;">💡 Hệ thống tự động bóc tách Câu hỏi, Đáp án A-B-C-D và Lời giải.</span>
+                    <button onclick="parseRawImportToQuestions()" style="background:#0284c7; color:#fff; border:none; padding:8px 18px; border-radius:8px; font-weight:bold; cursor:pointer;">⚡ CHUYỂN THÀNH CÂU HỎI</button>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px; margin-bottom:10px;">
+                <h3 style="color:#38bdf8; font-size:22px;">📝 Danh Sách Chi Tiết (<span id="q-total-count">0</span> Câu Hỏi):</h3>
+                <button onclick="addNewQuestionItem()" style="background:#22c55e; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer;">➕ Thêm Câu Hỏi Mới</button>
+            </div>
+
+            <div id="qbank-cards-container" style="max-height: 400px; overflow-y: auto;"></div>
+
+            <div class="modal-btn-row" style="display:flex; justify-content:space-between; margin-top:15px; flex-wrap:wrap; gap:10px;">
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button class="btn-save-config" onclick="saveCurrentTopic()" style="background:#22c55e; color:#fff; border:none; padding:10px 20px; border-radius:8px; font-weight:bold; font-size:16px;">💾 LƯU NGÂN HÀNG CÂU HỎI</button>
+                    <button onclick="deleteCurrentTopic()" style="background:#e11d48; color:#fff; border:none; padding:10px 16px; border-radius:8px; font-weight:bold; cursor:pointer;">🗑️ Xóa Chủ Đề Này</button>
+                    <button onclick="deleteAllTopics()" style="background:#881337; color:#fff; border:1px solid #f43f5e; padding:10px 16px; border-radius:8px; font-weight:bold; cursor:pointer;">⚠️ Xóa Toàn Bộ Tất Cả Chủ Đề</button>
+                </div>
+                <button class="btn-close-modal" onclick="closeModal('qbank-modal-box')" style="background:#64748b; color:#fff; border:none; padding:10px 18px; border-radius:8px; font-weight:bold; cursor:pointer;">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal BẢNG ĐIỂM TÍCH LŨY -->
+    <div class="config-modal" id="cumulative-modal-box">
+        <div class="config-box">
+            <h2 style="color: #eab308; font-size: 32px; border-bottom: 3px solid #334155; padding-bottom: 10px; margin-bottom: 12px;">
+                🏆 BẢNG ĐIỂM TÍCH LŨY CÁC MÔN & CỘNG DỒN (<span id="cumul-mode-title" style="color:#a855f7;">Thi Thử</span>)
+            </h2>
+
+            <div style="display: flex; align-items: center; gap: 10px; margin: 15px 0; background: #1e293b; padding: 10px 15px; border-radius: 8px;">
+                <label style="color: #f8fafc; font-weight: bold; font-size: 14px; white-space: nowrap;">🔍 Xem Điểm Theo Chủ Đề:</label>
+                <select id="filter-topic-select" onchange="renderCumulativeTable()" style="background: #0f172a; color: #38bdf8; font-weight: bold; border: 1px solid #3b82f6; padding: 8px 12px; border-radius: 6px; outline: none; cursor: pointer; flex-grow: 1; max-width: 350px;">
+                    <option value="ALL">🌟 Tất Cả Môn (Tổng Quan Cột Tổng)</option>
+                </select>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table class="student-table" id="cumul-multi-subject-table"></table>
+            </div>
+
+            <div class="modal-btn-row" style="display:flex; justify-content:space-between; margin-top:15px;">
+                <button id="btn-reset-cumul" class="admin-only" disabled onclick="resetCumulativeScores()" style="background:#ef4444; color:#fff; border:none; padding:10px 20px; border-radius:8px; font-weight:bold; font-size:18px; cursor:pointer;">🗑️ Đặt Lại Điểm Bằng 0 (Cần Admin)</button>
+                <button class="btn-close-modal" onclick="closeModal('cumulative-modal-box')" style="background:#64748b; color:#fff; border:none; padding:10px 18px; border-radius:8px; font-weight:bold; cursor:pointer;">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Nhật ký -->
+    <div class="config-modal" id="history-modal-box">
+        <div class="config-box">
+            <h2 style="color: #a855f7; font-size: 26px; border-bottom: 2px solid #334155; padding-bottom: 8px; display:flex; justify-content:space-between; align-items:center;">
+                <span>📹 NHẬT KÝ TRÍCH XUẤT CÁC BUỔI HỌC</span>
+                <div style="font-size:16px; font-weight:normal; display:flex; align-items:center; gap:8px;">
+                    <label style="margin:0;">Tuần:</label>
+                    <select id="history-week-filter" onchange="renderHistoryTable()" style="padding:4px 8px; font-size:15px;"></select>
+                </div>
+            </h2>
+            <div style="max-height: 480px; overflow-y: auto; margin-top:10px;">
+                <table class="student-table">
+                    <thead>
+                        <tr>
+                            <th style="width:10%;">Tuần</th>
+                            <th style="width:12%;">Ngày</th>
+                            <th style="width:18%;">Môn / Chủ Đề</th>
+                            <th style="width:20%;">Học Sinh</th>
+                            <th style="width:28%;">Nội Dung Câu Hỏi</th>
+                            <th style="width:12%; text-align:center;">Kết Quả</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body"></tbody>
+                </table>
+            </div>
+            <div class="modal-btn-row" style="display:flex; justify-content:space-between; margin-top:15px; flex-wrap:wrap; gap:10px;">
+                <div style="display:flex; gap:10px;">
+                    <button onclick="clearTestLogsOnly()" style="background:#d97706; color:#fff; border:none; padding:10px 18px; border-radius:8px; font-weight:bold; cursor:pointer;">🗑️ Xóa Nhật Ký Dữ Liệu Chạy Thử</button>
+                    <button id="btn-reset-term" class="admin-only" disabled onclick="resetAllDataForNewTerm()" style="background-color: #dc2626; color: white; font-weight: bold; padding: 10px 18px; border-radius: 8px; border: none; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                        🔄 Reset Điểm & Xóa Sạch Nhật Ký (Cần Admin)
+                    </button>
+                </div>
+                <button class="btn-close-modal" onclick="closeModal('history-modal-box')" style="background:#64748b; color:#fff; border:none; padding:10px 18px; border-radius:8px; font-weight:bold; cursor:pointer;">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Xem Chi Tiết Câu Hỏi -->
+    <div class="config-modal" id="review-q-modal-box">
+        <div class="config-box" style="max-width: 900px;">
+            <h2 style="color: #38bdf8; font-size: 28px; border-bottom: 2px solid #334155; padding-bottom: 8px; margin-bottom: 12px;">🔍 CHI TIẾT CÂU HỎI & CỦNG CỐ KIẾN THỨC</h2>
+            <p style="font-size: 26px; color: #fde047; font-weight: bold;" id="review-student-name">Học sinh: ---</p>
+            <div style="background:#0f172a; padding:20px; border-radius:12px; margin-top:12px; border:2px solid #38bdf8;" id="review-content-box"></div>
+            <div class="modal-btn-row" style="display:flex; justify-content:flex-end; margin-top:15px;">
+                <button class="btn-close-modal" onclick="closeModal('review-q-modal-box')" style="background:#64748b; color:#fff; border:none; padding:10px 18px; border-radius:8px; font-weight:bold; cursor:pointer;">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quiz Screen -->
+    <div id="quiz-body">
+        <div class="status-bar">
+            <span>👤 Học sinh: 
+                <select id="active-student-select" class="student-select-dropdown" onchange="onActiveStudentChanged(this.value)"></select>
+            </span>
+            <span class="timer">⏱ <span id="timer-val">30</span>s</span>
+        </div>
+
+        <div class="lifelines">
+            <button class="btn-life" id="life-50" onclick="use5050()">💥 Trợ giúp 50:50</button>
+            <button class="btn-life" id="life-skip" onclick="useSkip()">🔄 Đổi câu hỏi tương đương</button>
+            <button class="btn-fail-penalty" id="btn-penalty" onclick="applyInitialStudentPenalty()">⚠️ Bạn này không làm được (Trừ điểm)</button>
+        </div>
+
+        <div class="question-box" id="q-text">Đang tải câu hỏi...</div>
+        <div class="options-grid" id="opt-container"></div>
+        <div class="explanation" id="exp-box"></div>
+
+        <div class="footer-nav" style="text-align:right;">
+            <button class="btn-next" id="btn-next" onclick="backToWheel()">Quay Chọn Bạn Tiếp Theo ➔</button>
+        </div>
+    </div>
+
+    <!-- Result Screen -->
+    <div class="result-screen" id="result-screen">
+        <h2 style="color: #38bdf8; font-size:36px;">📊 BẢNG TỔNG KẾT BÀI HỌC HÔM NAY</h2>
+        <p style="color:#94a3b8; font-size:18px; margin-bottom:10px;">(Nhấp vào tên bất kỳ bạn nào bên dưới để xem lại câu hỏi & lời giải củng cố)</p>
+        
+        <div class="result-two-col">
+            <div class="res-col correct-col">
+                <h3 style="color: #4ade80; font-size:26px; margin-bottom:12px;">✅ TRẢ LỜI ĐÚNG</h3>
+                <div id="res-correct-list"></div>
+            </div>
+            <div class="res-col wrong-col">
+                <h3 style="color: #fca5a5; font-size:26px; margin-bottom:12px;">❌ TRẢ LỜI SAI</h3>
+                <div id="res-wrong-list"></div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px; display:flex; justify-content:center; gap:15px; flex-wrap:wrap;">
+            <button onclick="saveSessionResultOnly()" style="background:#22c55e; border:none; color:#fff; padding:15px 28px; border-radius:14px; font-weight:800; font-size:22px; cursor:pointer;">💾 Lưu Kết Quả</button>
+            
+            <div class="export-dropdown-container">
+                <button class="btn-export-main">
+                    📥 Xuất Báo Cáo / Xuất File ▾
+                </button>
+                <div class="export-dropdown-menu">
+                    <button onclick="exportSessionToPDF()" class="export-dropdown-item">
+                        📕 Xuất File PDF (.pdf - Chuẩn A4)
+                    </button>
+                    <button onclick="exportSessionToWord()" class="export-dropdown-item">
+                        📝 Xuất File Word (.doc)
+                    </button>
+                    <button onclick="exportSessionToCSV()" class="export-dropdown-item">
+                        📊 Xuất Báo Cáo Buổi Học (.xls)
+                    </button>
+                    <button onclick="exportCumulativeScoresToExcel()" class="export-dropdown-item">
+                        🏆 Xuất Bảng Điểm Tích Lũy (.xls)
+                    </button>
+                </div>
+            </div>
+
+            <button onclick="restartGame()" style="background:#eab308; border:none; color:#000; padding:15px 32px; border-radius:14px; font-weight:800; font-size:22px; cursor:pointer;">🎡 Lượt Quay Mới</button>
+        </div>
+    </div>
+</div>
+
+<script>
+/* FIREBASE CONFIG */
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "YOUR_APP_ID"
+};
+
+var db = null;
+try {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+} catch(e) { console.log("Cấu hình Firebase"); }
+
+function loadQuestionsFromCloud() {
+    var now = new Date(); 
+    var nowSec = now.getHours() * 3600 + now.getMinutes() * 60;
+    var parts = lockTimeTarget.split(":"); 
+    var targetSec = parseInt(parts[0], 10) * 3600 + parseInt(parts[1], 10) * 60;
+
+    if (!isAdminLoggedIn && nowSec < targetSec) {
+        parsedQuestions = [];
+        document.getElementById("q-text").innerText = "🔒 Đề thi chưa đến giờ mở. Dữ liệu đang được bảo vệ an toàn trên Đám Mây!";
+        return;
+    }
+
+    if (db) {
+        db.collection("qbank").doc("week_" + currentWeek).get().then((doc) => {
+            if (doc.exists) {
+                parsedQuestions = doc.data().questions || [];
+                renderQBankCards();
+                renderMath();
+            }
+        });
+    }
+}
+
+function openAINotebookHelper() {
+    var topicName = document.getElementById("topic-title-input").value.trim() || "Môn học";
+    var activeWeek = currentWeek || 6; 
+    var customPromptExtra = document.getElementById("ai-custom-prompt-input").value.trim();
+    
+    var lowerTopic = topicName.toLowerCase();
+    var notebookUrl = "https://notebooklm.google.com"; 
+
+    if (lowerTopic.includes("sinh") || lowerTopic.includes("sinh học")) {
+        notebookUrl = "https://gemini.google.com/notebook/983abc9e-251a-454b-b6f5-91810033f2b2";
+    } else if (lowerTopic.includes("địa") || lowerTopic.includes("địa lý") || lowerTopic.includes("sử") || lowerTopic.includes("lịch sử")) {
+        notebookUrl = "https://gemini.google.com/notebook/46c713dd-4212-4528-9985-2354859895fd";
+    } else if (lowerTopic.includes("toán") || lowerTopic.includes("hình") || lowerTopic.includes("đại số")) {
+        notebookUrl = "https://gemini.google.com/notebook/632e42fd-5993-42b2-94fd-320ceb00c5b3";
+    } else if (lowerTopic.includes("khtn") || lowerTopic.includes("khoa học tự nhiên")) {
+        notebookUrl = "https://gemini.google.com/notebook/1531c29c-5563-4abc-a2fc-a5b7feba708e";
+    }
+
+    window.open(notebookUrl, "_blank");
+
+    var promptText = `Bạn là một chuyên gia biên soạn đề thi giáo dục Trung học cơ sở (THCS). Dựa vào tài liệu Phân phối chương trình (PPCT), Sách giáo khoa và Kế hoạch bài dạy trong sổ tay này:
+
+NHIỆM VỤ: Hãy tra cứu PPCT môn: "${topicName}" tính đến thời điểm TUẦN ${activeWeek} và tạo cho tôi bộ 20 câu hỏi trắc nghiệm ôn tập.
+
+⚠️ BẮT BUỘC CHUẨN HÓA VĂN PHONG VÀ CHÍNH TẢ (TIÊU CHÍ TỐI CAO):
+1. CHUẨN CHÍNH TẢ & THUẬT NGỮ CHUYÊN MÔN THCS.
+2. TUYỆT ĐỐI KHÔNG DÙNG KÝ HIỆU LOGIC MÁY MÓC (chẳng hạn như ký hiệu suy ra, tương đương, vì, do đó bằng ký hiệu toán học). Hãy trình bày bằng văn phong sư phạm tự nhiên (Ta có, Suy ra, Do đó, Nên).
+
+QUY TẮC PHÂN BỔ BÀI HỌC THEO PPCT:
+1. TUYỆT ĐỐI KHÔNG ra câu hỏi vượt quá phạm vi bài học của TUẦN ${activeWeek} trong PPCT.
+2. TỈ LỆ NỘI DUNG CÂU HỎI:
+   - 60% câu hỏi (12 câu): Trọng tâm vào các bài học mới thuộc TUẦN ${activeWeek} (hoặc Tuần ${activeWeek-1}).
+   - 40% câu hỏi (8 câu): Củng cố, ôn tập các bài đã học từ Tuần 1 đến Tuần ${activeWeek-2}.
+3. CHIA 4 MỨC ĐỘ NĂNG LỰC: Nhận biết (6 câu), Thông hiểu (6 câu), Vận dụng (5 câu), Vận dụng cao (3 câu).
+${customPromptExtra ? '\n4. YÊU CẦU BỔ SUNG ĐẶC BIỆT TỪ GIÁO VIÊN: ' + customPromptExtra : ''}
+
+ĐỊNH DẠNG ĐẦU RA BẮT BUỘC:
+- Các công thức kẹp trong dấu $ (ví dụ: $x^2 + 1 = 0$).
+- Đặt dấu asterisk (*) ngay trước chữ cái của đáp án ĐÚNG.
+- Cuối mỗi câu có dòng "Giải thích:" ngắn gọn.
+- XUẤT TẤT CẢ 20 CÂU NẰM TRỌN TRONG DUY NHẤT MỘT KHUNG MÃ CODE BLOCK THUẦN TEXT.`;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(promptText);
+        alert("🤖 Đã sao chép câu lệnh Prompt AI vào bộ nhớ tạm!");
+    }
+}
+
+var START_WEEK_1_DATE = new Date(2026, 8, 7); 
+var adminPasswordCode = localStorage.getItem("wheel_v50_admin_pass") || "123456"; 
+var isAdminLoggedIn = false;
+var activeLoginTab = 'pass';
+
+var teacherGender = localStorage.getItem("wheel_v50_teacher_gender") || "Thầy (cô) chủ nhiệm";
+var teacherName = localStorage.getItem("wheel_v50_teacher_name") || "Nguyễn Văn A";
+var currentClassName = localStorage.getItem("wheel_v50_class_name") || "7A6";
+var currentSchoolYear = localStorage.getItem("wheel_v50_school_year") || "2026-2027";
+
+var lockTimeTarget = localStorage.getItem("wheel_v50_lock_time") || "06:45";
+var selectedMCName = localStorage.getItem("wheel_v50_selected_mc") || "Trần Kim Thư";
+var isLockdownActive = false;
+var hasMCBeenCalledThisSession = false;
+var totalSpinCountThisSession = 0;
+var currentSpinMode = "all"; 
+
+var masterSubjectList = [
+    "Toán", "Ngữ văn", "Tiếng Anh", "Lịch sử", 
+    "Địa lý", "Sinh học", "Hóa học", "Tin học", "Công nghệ", "Khoa Học Tự Nhiên", "Hoạt Động Trải Nghiệm"
+];
+
+var defaultScheduleByWeek = {
+    6: {
+        2: { subject: "Toán", topicTitle: "Toán 7 - Số học & Hình học", mc: "Trần Kim Thư" },
+        3: { subject: "Ngữ văn", topicTitle: "Khúc nhạc tâm hồn", mc: "Trần Minh Quân" },
+        4: { subject: "Tiếng Anh", topicTitle: "Vocabulary & Grammar Challenge", mc: "Nguyễn Văn Khải" },
+        5: { subject: "Lịch sử", topicTitle: "Ôn tập Lịch sử 7", mc: "Trần Kim Thư" },
+        6: { subject: "Địa lý", topicTitle: "Kiến thức Địa lý 7", mc: "Trần Minh Quân" },
+        7: { subject: "Sinh học", topicTitle: "Chủ đề Sinh học 7", mc: "Trần Kim Thư" }
+    }
+};
+
+var scheduleByWeekStore = {};
+var editingScheduleWeek = 6;
+
+function calculateWeekFromDate(selectedDate) {
+    var diffTime = selectedDate.getTime() - START_WEEK_1_DATE.getTime();
+    var diffDays = Math.floor(diffTime / (1000 * 3600 * 24));
+    if (diffDays < 0) return 1; 
+    var weekNum = Math.floor(diffDays / 7) + 1;
+    return weekNum > 35 ? 35 : weekNum;
+}
+
+function getDateFromWeek(weekNum) {
+    var targetDate = new Date(START_WEEK_1_DATE);
+    targetDate.setDate(START_WEEK_1_DATE.getDate() + (weekNum - 1) * 7);
+    return targetDate;
+}
+
+function toggleShowPassword(inputId, btnEl) {
+    var input = document.getElementById(inputId);
+    if (input.type === "password") { input.type = "text"; btnEl.innerText = "🙈"; }
+    else { input.type = "password"; btnEl.innerText = "👁️"; }
+}
+
+function renderScheduleTableForWeek(weekNum) {
+    editingScheduleWeek = parseInt(weekNum) || 6;
+    var tbody = document.getElementById("schedule-table-body");
+    var weekLabel = document.getElementById("schedule-modal-week-label");
+    if (weekLabel) weekLabel.innerText = editingScheduleWeek;
+    if (!tbody) return;
+    tbody.innerHTML = "";
+
+    var daysMap = { 2: "Thứ 2", 3: "Thứ 3", 4: "Thứ 4", 5: "Thứ 5", 6: "Thứ 6", 7: "Thứ 7" };
+    var currentWeekData = scheduleByWeekStore[editingScheduleWeek] || {};
+
+    for (var d = 2; d <= 7; d++) {
+        var item = currentWeekData[d] || { subject: "", topicTitle: "", mc: "" };
+        
+        var optionsHtml = '<option value="">-- Chọn Môn --</option>';
+        masterSubjectList.forEach(function(subj) {
+            var selectedStr = (subj.toLowerCase() === item.subject.toLowerCase()) ? 'selected' : '';
+            optionsHtml += '<option value="' + subj + '" ' + selectedStr + '>' + subj + '</option>';
+        });
+
+        var mcOptionsHtml = '<option value="">-- Chọn MC --</option>';
+        studentsData.forEach(function(st) {
+            var mcSelectedStr = (st.name === item.mc) ? 'selected' : '';
+            mcOptionsHtml += '<option value="' + st.name + '" ' + mcSelectedStr + '>' + st.name + '</option>';
+        });
+
+        var tr = document.createElement("tr");
+        tr.innerHTML = '<td style="font-weight:bold; color:#fde047;">' + daysMap[d] + '</td>' +
+            '<td><select id="sch_select_' + d + '" style="width:100%; padding:6px 10px; border-radius:6px; background:#0f172a; color:#38bdf8; font-weight:bold; font-size:15px; border:1px solid #334155; outline:none;">' + optionsHtml + '</select></td>' +
+            '<td><input type="text" id="sch_topic_' + d + '" value="' + (item.topicTitle || '') + '" placeholder="Nhập chủ đề hoặc nội dung sinh hoạt..." style="width:100%; padding:6px 10px; background:#1e293b; color:#fff; border:1px solid #334155; border-radius:6px; font-size:14px;"></td>' +
+            '<td><select id="sch_mc_' + d + '" onchange="onScheduleMCSelected(' + d + ', this.value)" style="width:100%; padding:6px 10px; border-radius:6px; background:#0f172a; color:#fde047; font-weight:bold; font-size:15px; border:1px solid #a855f7; outline:none;">' + mcOptionsHtml + '</select></td>';
+        tbody.appendChild(tr);
+    }
+}
+
+function onScheduleMCSelected(dayNum, mcName) {
+    if (!scheduleByWeekStore[editingScheduleWeek]) scheduleByWeekStore[editingScheduleWeek] = {};
+    if (!scheduleByWeekStore[editingScheduleWeek][dayNum]) scheduleByWeekStore[editingScheduleWeek][dayNum] = {};
+    scheduleByWeekStore[editingScheduleWeek][dayNum].mc = mcName;
+    
+    var now = new Date();
+    var currentDayNum = now.getDay() + 1;
+    if (editingScheduleWeek === currentWeek && dayNum === currentDayNum && mcName) {
+        saveMCSelection(mcName);
+    }
+}
+
+function saveScheduleForWeek(weekNum) {
+    if (!scheduleByWeekStore[weekNum]) scheduleByWeekStore[weekNum] = {};
+
+    for (var d = 2; d <= 7; d++) {
+        var selElem = document.getElementById("sch_select_" + d);
+        var topicElem = document.getElementById("sch_topic_" + d);
+        var mcElem = document.getElementById("sch_mc_" + d);
+        
+        if (selElem && topicElem) {
+            scheduleByWeekStore[weekNum][d] = { 
+                subject: selElem.value, 
+                topicTitle: topicElem.value,
+                mc: mcElem ? mcElem.value : ""
+            };
+        }
+    }
+
+    localStorage.setItem("wheel_v50_schedule_by_week", JSON.stringify(scheduleByWeekStore));
+    if (weekNum == currentWeek) {
+        var todayObj = new Date();
+        var todayDayOfWeek = todayObj.getDay() + 1;
+        applyScheduleForDay(todayDayOfWeek);
+    }
+    alert("💾 Đã lưu thành công Lịch sinh hoạt 15 phút cho Tuần " + weekNum + "!");
+}
+
+function onScheduleWeekSelectChanged(val) { renderScheduleTableForWeek(val); }
+
+function populateScheduleModalWeekDropdown() {
+    var schWeekSel = document.getElementById("schedule-week-select");
+    var qbankWeekSel = document.getElementById("qbank-week-select");
+    var copySrcWeekSel = document.getElementById("copy-src-week-select");
+
+    if (schWeekSel) schWeekSel.innerHTML = "";
+    if (qbankWeekSel) qbankWeekSel.innerHTML = "";
+    if (copySrcWeekSel) copySrcWeekSel.innerHTML = "";
+
+    for (var w = 1; w <= 35; w++) {
+        var opt = document.createElement("option"); opt.value = w; opt.innerText = "Tuần " + w;
+        if (w === currentWeek) opt.selected = true;
+        if (schWeekSel) schWeekSel.appendChild(opt);
+
+        var optQ = document.createElement("option"); optQ.value = w; optQ.innerText = "Tuần " + w;
+        if (w === currentWeek) optQ.selected = true;
+        if (qbankWeekSel) qbankWeekSel.appendChild(optQ);
+
+        var optC = document.createElement("option"); optC.value = w; optC.innerText = "Tuần " + w;
+        if (w === (currentWeek > 1 ? currentWeek - 1 : 1)) optC.selected = true;
+        if (copySrcWeekSel) copySrcWeekSel.appendChild(optC);
+    }
+    updateCopyTopicPreview();
+}
+
+function copyPreviousWeekSchedule() {
+    var prevWeek = editingScheduleWeek - 1;
+    if (prevWeek < 1) { alert("⚠️ Không có tuần trước để sao chép!"); return; }
+    var prevData = scheduleByWeekStore[prevWeek];
+    if (!prevData) { alert("⚠️ Dữ liệu Tuần " + prevWeek + " chưa được khởi tạo!"); return; }
+
+    scheduleByWeekStore[editingScheduleWeek] = JSON.parse(JSON.stringify(prevData));
+    renderScheduleTableForWeek(editingScheduleWeek);
+    alert("📋 Đã sao chép khung lịch từ Tuần " + prevWeek + " sang Tuần " + editingScheduleWeek + " thành công!");
+}
+
+function updateCopyTopicPreview() {
+    var srcWeek = document.getElementById("copy-src-week-select").value;
+    var srcDay = document.getElementById("copy-src-day-select").value;
+
+    var srcWeekData = scheduleByWeekStore[srcWeek] || {};
+    var srcDayObj = srcWeekData[srcDay];
+
+    var btnPreview = document.getElementById("btn-copy-preview-topic");
+    var badgeRepeat = document.getElementById("topic-repeat-count-badge");
+
+    if (!srcDayObj || (!srcDayObj.subject && !srcDayObj.topicTitle)) {
+        if (btnPreview) btnPreview.innerText = "--- (Chưa có bài)";
+        if (badgeRepeat) badgeRepeat.innerText = "0 lần";
+        return;
+    }
+
+    var topicTitle = srcDayObj.topicTitle || srcDayObj.subject;
+    var fullTopicName = srcDayObj.subject ? (srcDayObj.subject + " - " + topicTitle) : topicTitle;
+    
+    if (btnPreview) btnPreview.innerText = "👉 " + fullTopicName;
+
+    var repeatCount = 0;
+    Object.keys(scheduleByWeekStore).forEach(function(w) {
+        var wData = scheduleByWeekStore[w];
+        for (var d = 2; d <= 7; d++) {
+            if (wData[d] && wData[d].subject && wData[d].subject.toLowerCase() === srcDayObj.subject.toLowerCase()) {
+                repeatCount++;
+            }
+        }
+    });
+
+    if (badgeRepeat) badgeRepeat.innerText = repeatCount + " lần trong lịch";
+}
+
+function applyPreviewTopicToTitle() {
+    var btnPreview = document.getElementById("btn-copy-preview-topic");
+    if (btnPreview && !btnPreview.innerText.includes("Chưa có bài")) {
+        var topicNameClean = btnPreview.innerText.replace(/^👉\s*/, '');
+        document.getElementById("topic-title-input").value = topicNameClean;
+    }
+}
+
+function copyTopicFromOldWeekDay() {
+    var srcWeek = document.getElementById("copy-src-week-select").value;
+    var srcDay = document.getElementById("copy-src-day-select").value;
+
+    var curTargetWeek = document.getElementById("qbank-week-select").value;
+    var curTargetDay = document.getElementById("qbank-day-select").value;
+
+    var srcWeekData = scheduleByWeekStore[srcWeek] || {};
+    var srcDayObj = srcWeekData[srcDay];
+
+    if (!srcDayObj || !srcDayObj.subject) {
+        alert("⚠️ Không tìm thấy chủ đề sinh hoạt nào ở Tuần " + srcWeek + " - Thứ " + srcDay + "!");
+        return;
+    }
+
+    var topicTitle = srcDayObj.topicTitle || srcDayObj.subject;
+    var matchedTopicKey = Object.keys(topicsStore).find(function(k) {
+        return k.toLowerCase().includes(srcDayObj.subject.toLowerCase());
+    });
+
+    if (matchedTopicKey && topicsStore[matchedTopicKey]) {
+        parsedQuestions = JSON.parse(JSON.stringify(topicsStore[matchedTopicKey].questions || []));
+        document.getElementById("topic-title-input").value = matchedTopicKey;
+    } else {
+        document.getElementById("topic-title-input").value = srcDayObj.subject + " - " + topicTitle;
+    }
+
+    renderQBankCards();
+    renderMath();
+    alert("📋 ĐÃ SAO CHÉP THÀNH CÔNG!\nNội dung & bộ câu hỏi từ Tuần " + srcWeek + " (Thứ " + srcDay + ") đã nạp vào Tuần " + curTargetWeek + " (Thứ " + curTargetDay + "). Hãy bấm '💾 LƯU NGÂN HÀNG CÂU HỎI' để hoàn tất.");
+}
+
+function applyScheduleForDay(dayOfWeek) {
+    var activeWeekData = scheduleByWeekStore[currentWeek] || {};
+    if (activeWeekData[dayOfWeek]) {
+        var sch = activeWeekData[dayOfWeek];
+        if (sch.mc) saveMCSelection(sch.mc);
+
+        if (!sch.subject) return;
+
+        var matchedTopicKey = Object.keys(topicsStore).find(function(k) {
+            return k.toLowerCase().includes(sch.subject.toLowerCase());
+        });
+
+        if (matchedTopicKey) {
+            currentTopicKey = matchedTopicKey;
+            if (sch.topicTitle) topicsStore[matchedTopicKey].subTitle = "Chủ đề: " + sch.topicTitle;
+            var topicSel = document.getElementById("topic-select");
+            if (topicSel) topicSel.value = currentTopicKey;
+            switchTopicPreset();
+        } else {
+            document.getElementById("display-main-title").innerText = "📖 VÒNG QUAY MAY MẮN - " + sch.subject.toUpperCase();
+            document.getElementById("display-sub-title").innerText = "Chủ đề: " + (sch.topicTitle || sch.subject);
+        }
+    }
+}
+
+function applyTodayScheduleForce() {
+    var now = new Date();
+    var day = now.getDay(); 
+    var targetDay = day + 1; 
+    if (targetDay < 2 || targetDay > 7) targetDay = 2;
+
+    applyScheduleForDay(targetDay);
+    closeModal('schedule-modal-box');
+    var curWeekSch = scheduleByWeekStore[currentWeek] || {};
+    var item = curWeekSch[targetDay] || {};
+    alert("⚡ ĐÃ KÍCH HOẠT LỊCH SINH HOẠT HÔM NAY!\nTuần: " + currentWeek + "\nMôn: " + (item.subject || 'Chưa chọn') + "\nChủ đề: " + (item.topicTitle || '') + "\nMC: " + (item.mc || selectedMCName));
+}
+
+function importScheduleFromWord(fileInput) {
+    var file = fileInput.files[0]; if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        mammoth.extractRawText({ arrayBuffer: e.target.result })
+            .then(function(result) {
+                document.getElementById("schedule-raw-textarea").value = result.value;
+                parseScheduleText();
+            });
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function importScheduleFromPDF(fileInput) {
+    var file = fileInput.files[0]; if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        var typedarray = new Uint8Array(e.target.result);
+        pdfjsLib.getDocument(typedarray).promise.then(function(pdf) {
+            var fullText = ""; var total = pdf.numPages, count = 0;
+            for (var i = 1; i <= total; i++) {
+                pdf.getPage(i).then(function(page) {
+                    page.getTextContent().then(function(tc) {
+                        fullText += tc.items.map(function(item) { return item.str; }).join(" ") + "\n";
+                        count++;
+                        if (count === total) {
+                            document.getElementById("schedule-raw-textarea").value = fullText;
+                            parseScheduleText();
+                        }
+                    });
+                });
+            }
+        });
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function parseScheduleText() {
+    var text = document.getElementById("schedule-raw-textarea").value.trim(); if (!text) return;
+    if (!scheduleByWeekStore[editingScheduleWeek]) scheduleByWeekStore[editingScheduleWeek] = {};
+
+    var lines = text.split(/\r?\n/);
+    lines.forEach(function(line) {
+        var match = line.match(/(Thứ\s*([2-7]))[:\s]+([^-]+)(?:\s*-\s*(.+))?/i);
+        if (match) {
+            var dayNum = parseInt(match[2]); var subj = match[3].trim(); var title = match[4] ? match[4].trim() : subj;
+            var matchedSubj = masterSubjectList.find(function(k) { return k.toLowerCase().includes(subj.toLowerCase()); }) || subj;
+            scheduleByWeekStore[editingScheduleWeek][dayNum] = { subject: matchedSubj, topicTitle: title, mc: selectedMCName };
+        }
+    });
+
+    renderScheduleTableForWeek(editingScheduleWeek);
+    alert("🎉 Đã phân tích văn bản và nạp vào bảng Lịch Tuần " + editingScheduleWeek + "!");
+}
+
+/* ĐĂNG NHẬP ADMIN & QUẢN LÝ DANH XƯNG "Thầy (cô) chủ nhiệm" */
+function switchLoginTab(type) {
+    activeLoginTab = type;
+    var passTab = document.getElementById("tab-pass-btn");
+    var emailTab = document.getElementById("tab-email-btn");
+    var formPass = document.getElementById("form-login-pass");
+    var formEmail = document.getElementById("form-login-email");
+
+    if (type === 'pass') {
+        passTab.classList.add("active"); emailTab.classList.remove("active");
+        formPass.style.display = "block"; formEmail.style.display = "none";
+    } else {
+        emailTab.classList.add("active"); passTab.classList.remove("active");
+        formEmail.style.display = "block"; formPass.style.display = "none";
+    }
+}
+
+function verifyAdminLoginTech() {
+    var captchaCheck = document.getElementById("captcha-check");
+    if (!captchaCheck.checked) { alert("⚠️ Vui lòng tích vào ô 'Tôi không phải là người máy'!"); return; }
+
+    if (activeLoginTab === 'pass') {
+        var pass = document.getElementById("admin-pass-input").value;
+        if (pass === adminPasswordCode) executeSuccessfulLogin(); else alert("❌ Sai mật khẩu quản trị!");
+    } else {
+        var account = document.getElementById("tech-account-input").value.trim();
+        var userpass = document.getElementById("tech-userpass-input").value.trim();
+        if (!account || !userpass) { alert("⚠️ Vui lòng nhập đầy đủ Email/SĐT và mật khẩu!"); return; }
+        executeSuccessfulLogin();
+    }
+}
+
+function loginWithGoogleMock() {
+    document.getElementById("captcha-check").checked = true;
+    alert("🌐 Đang kết nối tài khoản Google SSO bảo mật...");
+    setTimeout(executeSuccessfulLogin, 500);
+}
+
+function executeSuccessfulLogin() {
+    isAdminLoggedIn = true; updateRoleUI(); closeModal("admin-login-modal");
+    document.getElementById("admin-pass-input").value = "";
+    loadQuestionsFromCloud();
+    if (isLockdownActive) {
+        isLockdownActive = false; document.getElementById("lockdown-overlay").style.display = "none"; document.getElementById("spin-btn").disabled = false;
+        alert("🔑 Đăng nhập " + teacherGender + " thành công! ĐÃ MỞ CƯỠNG CHẾ GAME DẠY SỚM!");
+    } else { alert("🔑 Đăng nhập Quyền Quản Trị (" + teacherGender + ") thành công!"); }
+}
+
+function saveTeacherGender(val) {
+    teacherGender = val;
+    localStorage.setItem("wheel_v50_teacher_gender", val);
+    updateTeacherUI();
+}
+
+function saveTeacherName(val) {
+    teacherName = val;
+    localStorage.setItem("wheel_v50_teacher_name", val);
+    updateTeacherUI();
+}
+
+function updateTeacherUI() {
+    var lblGender = document.getElementById("lbl-teacher-gender");
+    var modalTitle = document.getElementById("modal-gender-title");
+    var genderInlines = document.querySelectorAll(".lbl-teacher-gender-inline");
+    
+    if (lblGender) lblGender.innerText = teacherGender;
+    if (modalTitle) modalTitle.innerText = teacherGender.toUpperCase();
+    genderInlines.forEach(function(el) { el.innerText = teacherGender; });
+
+    var teacherInput = document.getElementById("teacher-name-input");
+    var genderSelect = document.getElementById("teacher-gender-select");
+    if (teacherInput) teacherInput.value = teacherName;
+    if (genderSelect) genderSelect.value = teacherGender;
+
+    var classInlines = document.querySelectorAll(".lbl-class-name-inline");
+    classInlines.forEach(function(el) { el.innerText = currentClassName; });
+}
+
+function saveClassAndYearInfo() {
+    var classVal = document.getElementById("class-name-input").value.trim() || "7A6";
+    var yearVal = document.getElementById("school-year-select").value || "2026-2027";
+
+    currentClassName = classVal;
+    currentSchoolYear = yearVal;
+
+    localStorage.setItem("wheel_v50_class_name", classVal);
+    localStorage.setItem("wheel_v50_school_year", yearVal);
+
+    updateTeacherUI();
+    alert("💾 Đã lưu thành công thông tin Lớp: " + classVal + " - Năm học: " + yearVal + "!");
+}
+
+function clearClassDataInfo() {
+    if (!isAdminLoggedIn) {
+        alert("🔒 Thao tác xóa cấu hình yêu cầu Thầy (cô) chủ nhiệm đăng nhập quyền ADMIN!");
+        return;
+    }
+    if (confirm("⚠️ Thầy (cô) chủ nhiệm có chắc chắn muốn XÓA / RESET cấu hình Lớp & Năm học về mặc định không?")) {
+        currentClassName = "7A6";
+        currentSchoolYear = "2026-2027";
+
+        document.getElementById("class-name-input").value = "7A6";
+        document.getElementById("school-year-select").value = "2026-2027";
+
+        localStorage.setItem("wheel_v50_class_name", "7A6");
+        localStorage.setItem("wheel_v50_school_year", "2026-2027");
+
+        updateTeacherUI();
+        alert("🗑️ Đã xóa sạch cấu hình và đưa về mặc định (Lớp 7A6 - Năm 2026 - 2027)!");
+    }
+}
+
+function openForgotPassModal() { closeModal("admin-login-modal"); openModal("forgot-pass-modal"); }
+function sendRecoveryOTP() {
+    var val = document.getElementById("recovery-email-input").value.trim(); if (!val) { alert("⚠️ Vui lòng nhập Email hoặc SĐT!"); return; }
+    alert("📨 Mã xác minh OTP đã được gửi đến: " + val); closeModal("forgot-pass-modal");
+}
+
+function checkPasswordStrength(val) {
+    var lengthValid = val.length >= 8, upperValid = /[A-Z]/.test(val), numberValid = /[0-9]/.test(val), specialValid = /[^A-Za-z0-9]/.test(val);
+    updateRuleItem("length", lengthValid); updateRuleItem("upper", upperValid); updateRuleItem("number", numberValid); updateRuleItem("special", specialValid);
+
+    var score = 0; if (lengthValid) score++; if (upperValid) score++; if (numberValid) score++; if (specialValid) score++;
+    var bar = document.getElementById("pass-strength-bar"); var label = document.getElementById("pass-strength-label");
+
+    if (val.length === 0) { bar.style.width = "0%"; bar.style.background = "#334155"; label.innerText = "Độ mạnh: Chưa nhập"; label.style.color = "#64748b"; }
+    else if (score <= 1) { bar.style.width = "25%"; bar.style.background = "#ef4444"; label.innerText = "Độ mạnh: Yếu 🔴"; label.style.color = "#ef4444"; }
+    else if (score === 2) { bar.style.width = "50%"; bar.style.background = "#f97316"; label.innerText = "Độ mạnh: Trung bình 🟠"; label.style.color = "#f97316"; }
+    else if (score === 3) { bar.style.width = "75%"; bar.style.background = "#eab308"; label.innerText = "Độ mạnh: Khá 🟡"; label.style.color = "#eab308"; }
+    else if (score === 4) { bar.style.width = "100%"; bar.style.background = "#22c55e"; label.innerText = "Độ mạnh: Cực Kỳ Mạnh ⭐"; label.style.color = "#4ade80"; }
+}
+
+function updateRuleItem(ruleId, isValid) {
+    var el = document.getElementById("rule-" + ruleId); var icon = document.getElementById("icon-" + ruleId);
+    if (isValid) { el.classList.add("valid"); icon.innerText = "✔"; } else { el.classList.remove("valid"); icon.innerText = "❌"; }
+}
+
+function saveNewPassword() {
+    var oldPass = document.getElementById("old-pass-input").value;
+    var newPass = document.getElementById("new-pass-input").value;
+    var confirmPass = document.getElementById("confirm-pass-input").value;
+
+    if (oldPass !== adminPasswordCode) { alert("❌ Mật khẩu hiện tại (cũ) không chính xác!"); return; }
+    if (newPass !== confirmPass) { alert("⚠️ Mật khẩu mới và Nhập lại mật khẩu không khớp nhau!"); return; }
+
+    if (newPass.length < 8 || !/[A-Z]/.test(newPass) || !/[0-9]/.test(newPass) || !/[^A-Za-z0-9]/.test(newPass)) {
+        alert("⚠️ Mật khẩu mới chưa đạt chuẩn bảo mật!"); return;
+    }
+
+    adminPasswordCode = newPass; localStorage.setItem("wheel_v50_admin_pass", newPass);
+    alert("🎉 ĐỔI MẬT KHẨU THÀNH CÔNG!");
+    document.getElementById("old-pass-input").value = ""; document.getElementById("new-pass-input").value = ""; document.getElementById("confirm-pass-input").value = "";
+    closeModal("change-pass-modal");
+}
+
+function saveLockTime(val) {
+    if (!val) return; lockTimeTarget = val; localStorage.setItem("wheel_v50_lock_time", val);
+    var timeInput = document.getElementById("lock-time-input"); if (timeInput && timeInput.value !== val) timeInput.value = val;
+    checkLockdownStatus();
+}
+
+function adjustLockTime(minuteDelta) {
+    var currentVal = document.getElementById("lock-time-input").value || lockTimeTarget || "06:45";
+    var parts = currentVal.split(":");
+    var totalMinutes = (parseInt(parts[0], 10) || 0) * 60 + (parseInt(parts[1], 10) || 0) + minuteDelta;
+    if (totalMinutes < 0) totalMinutes += 24 * 60; totalMinutes = totalMinutes % (24 * 60);
+
+    var formattedTime = String(Math.floor(totalMinutes / 60)).padStart(2, '0') + ":" + String(totalMinutes % 60).padStart(2, '0');
+    document.getElementById("lock-time-input").value = formattedTime; saveLockTime(formattedTime);
+}
+
+function saveMCSelection(val) { 
+    selectedMCName = val; 
+    localStorage.setItem("wheel_v50_selected_mc", val); 
+    var mcTopSel = document.getElementById("mc-top-dropdown");
+    if (mcTopSel && mcTopSel.value !== val) mcTopSel.value = val;
+}
+
+function checkLockdownStatus() {
+    if (isAdminLoggedIn) { isLockdownActive = false; document.getElementById("lockdown-overlay").style.display = "none"; document.getElementById("spin-btn").disabled = false; return; }
+    var now = new Date(); var nowSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+    var parts = lockTimeTarget.split(":"); var targetSec = parseInt(parts[0], 10) * 3600 + parseInt(parts[1], 10) * 60;
+
+    if (nowSec < targetSec) {
+        isLockdownActive = true; document.getElementById("lockdown-overlay").style.display = "flex"; document.getElementById("spin-btn").disabled = true;
+        var remainingSec = targetSec - nowSec;
+        document.getElementById("lockdown-msg-text").innerText = "🔒 Đề thi chưa đến giờ mở (Mở lúc " + lockTimeTarget + ")\n⏱️ Còn " + Math.floor(remainingSec / 60) + " phút " + (remainingSec % 60) + " giây nữa...";
+    } else {
+        isLockdownActive = false; document.getElementById("lockdown-overlay").style.display = "none"; document.getElementById("spin-btn").disabled = false;
+    }
+}
+setInterval(checkLockdownStatus, 1000);
+
+/* DANH SÁCH HỌC SINH MẶC ĐỊNH & CÂU HỎI MẪU CHUẨN SƯ PHẠM THCS */
+var defaultStudents = [
+    { name: "Chướng Tường Nhật An", wheelName: "Nhật An", level: "Đạt", conduct: "Tốt", priority: false },
+    { name: "Nguyễn Lê Kim Anh", wheelName: "Kim Anh", level: "Khá", conduct: "Tốt", priority: false },
+    { name: "Phạm Gia Bảo", wheelName: "Gia Bảo", level: "Đạt", conduct: "Tốt", priority: false },
+    { name: "Thiều Gia Bảo", wheelName: "T.Gia Bảo", level: "Khá", conduct: "Tốt", priority: false },
+    { name: "Trần Ngọc Bích", wheelName: "Ngọc Bích", level: "Đạt", conduct: "Tốt", priority: false },
+    { name: "Hoàng Tấn Duy", wheelName: "Tấn Duy", level: "Đạt", conduct: "Tốt", priority: false },
+    { name: "Nguyễn Trần Bảo Duy", wheelName: "Bảo Duy", level: "Khá", conduct: "Tốt", priority: false },
+    { name: "Nguyễn Hải Hà", wheelName: "Hải Hà", level: "Đạt", conduct: "Tốt", priority: false },
+    { name: "Lê Phước Hải", wheelName: "Phước Hải", level: "Khá", conduct: "Tốt", priority: false },
+    { name: "Phạm Thị Thanh Huyền", wheelName: "Thanh Huyền", level: "Khá", conduct: "Tốt", priority: false },
+    { name: "Nguyễn Văn Khải", wheelName: "Văn Khải", level: "Giỏi", conduct: "Tốt", priority: false },
+    { name: "Bùi Nguyễn Minh Khánh", wheelName: "Minh Khánh", level: "Đạt", conduct: "Tốt", priority: false },
+    { name: "Đỗ Duy Khoa", wheelName: "Duy Khoa", level: "Giỏi", conduct: "Tốt", priority: false },
+    { name: "Nguyễn Thị Diệu Liên", wheelName: "Diệu Liên", level: "Khá", conduct: "Tốt", priority: false },
+    { name: "Nguyễn Văn Luân", wheelName: "Văn Luân", level: "Khá", conduct: "Tốt", priority: false },
+    { name: "Phan Nhật Minh", wheelName: "Nhật Minh", level: "Đạt", conduct: "Tốt", priority: false },
+    { name: "Lê Võ Hà My", wheelName: "Hà My", level: "Khá", conduct: "Tốt", priority: false },
+    { name: "Đặng Bảo Nam", wheelName: "Bảo Nam", level: "Đạt", conduct: "Tốt", priority: false },
+    { name: "Lê Thị Kim Ngân", wheelName: "Kim Ngân", level: "Đạt", conduct: "Tốt", priority: false },
+    { name: "Vương Khánh Ngân", wheelName: "Khánh Ngân", level: "Khá", conduct: "Tốt", priority: false },
+    { name: "Hoàng Lê Bảo Ngọc", wheelName: "Bảo Ngọc", level: "Đạt", conduct: "Tốt", priority: false },
+    { name: "Đào An Nhiên", wheelName: "Đ.An Nhiên", level: "Giỏi", conduct: "Tốt", priority: false },
+    { name: "Nguyễn An Nhiên", wheelName: "N.An Nhiên", level: "Giỏi", conduct: "Tốt", priority: false },
+    { name: "Lê Quỳnh Như", wheelName: "Quỳnh Như", level: "Giỏi", conduct: "Tốt", priority: false },
+    { name: "Lê Vũ Diễm Như", wheelName: "Diễm Như", level: "Khá", conduct: "Tốt", priority: false },
+    { name: "Nguyễn Tấn Phát", wheelName: "Tấn Phát", level: "Khá", conduct: "Tốt", priority: false },
+    { name: "Trần Đức Phát", wheelName: "Đức Phát", level: "Đạt", conduct: "Tốt", priority: false },
+    { name: "Bùi Bảo Phúc", wheelName: "Bảo Phúc", level: "Khá", conduct: "Tốt", priority: false },
+    { name: "Nguyễn Ngọc Anh Quân", wheelName: "Anh Quân", level: "Khá", conduct: "Tốt", priority: false },
+    { name: "Nguyễn Thành Minh Quân", wheelName: "Minh Quân", level: "Khá", conduct: "Tốt", priority: false },
+    { name: "Trần Minh Quân", wheelName: "T.Minh Quân", level: "Đạt", conduct: "Tốt", priority: false },
+    { name: "Cai An Thành", wheelName: "An Thành", level: "Giỏi", conduct: "Tốt", priority: false },
+    { name: "Trần Tiến Thành", wheelName: "Tiến Thành", level: "Đạt", conduct: "Tốt", priority: false },
+    { name: "Trần Thị Thu Thảo", wheelName: "Thu Thảo", level: "Giỏi", conduct: "Tốt", priority: false },
+    { name: "Phạm Châu Như Thùy", wheelName: "Như Thùy", level: "Giỏi", conduct: "Tốt", priority: false },
+    { name: "Trần Kim Thư", wheelName: "Kim Thư", level: "Giỏi", conduct: "Tốt", priority: false },
+    { name: "Hoàng Nguyễn Thủy Tiên", wheelName: "Thủy Tiên", level: "Giỏi", conduct: "Tốt", priority: false },
+    { name: "Võ Thành Tiệp", wheelName: "Thành Tiệp", level: "Khá", conduct: "Tốt", priority: false },
+    { name: "Ngô Trí Tới", wheelName: "Trí Tới", level: "Khá", conduct: "Tốt", priority: false },
+    { name: "Vy Thanh Trung", wheelName: "Thanh Trung", level: "Giỏi", conduct: "Tốt", priority: false },
+    { name: "Võ Đào Anh Tuấn", wheelName: "Anh Tuấn", level: "Giỏi", conduct: "Tốt", priority: false },
+    { name: "Nguyễn Lê Tường Vy", wheelName: "Tường Vy", level: "Khá", conduct: "Tốt", priority: false },
+    { name: "Mai Nguyễn Minh Vỹ", wheelName: "Minh Vỹ", level: "Giỏi", conduct: "Tốt", priority: false }
+];
+
+function generate20DefaultQuestions() {
+    return [
+        { id: 1, level: "Nhận biết", timeLimit: 20, q: "Câu 1: Nét độc đáo của một bài thơ bốn chữ hoặc năm chữ thường được thể hiện tập trung qua các yếu tố nghệ thuật nào?", opts: ["A. Cốt truyện, nhân vật, bối cảnh không gian và thời gian", "B. Từ ngữ, hình ảnh, vần, nhịp và các biện pháp tu từ", "C. Lý luận văn học và phong cách riêng của tác giả", "D. Bố cục ba phần gồm Mở bài, Thân bài và Kết bài"], ans: 1, exp: "Theo Tri thức ngữ văn, nét độc đáo của bài thơ bốn chữ, năm chữ thể hiện qua từ ngữ, hình ảnh, vần, nhịp, biện pháp tu từ." },
+        { id: 2, level: "Thông hiểu", timeLimit: 25, q: "Câu 2: Rút gọn biểu thức toán học $E = -\\left(\\frac{2}{7} - 5\\right) + \\left(1 - \\frac{2}{7}\\right)$ thu được kết quả là:", opts: ["A. $E = 6 - \\frac{4}{7}$", "B. $E = -4$", "C. $E = 5$", "D. $E = 0$"], ans: 0, exp: "Ta có biến đổi bỏ dấu ngoặc: $E = -\\frac{2}{7} + 5 + 1 - \\frac{2}{7} = 6 - \\frac{4}{7}$." },
+        { id: 3, level: "Nhận biết", timeLimit: 20, q: "Câu 3: Tác giả của bài thơ \"Đồng dao mùa xuân\" là ai?", opts: ["A. Thanh Thảo", "B. Nguyễn Khoa Điềm", "C. Nguyễn Ngọc Tư", "D. Hữu Thỉnh"], ans: 1, exp: "Do đó, tác giả của bài thơ \"Đồng dao mùa xuân\" là nhà thơ Nguyễn Khoa Điềm." }
+    ];
+}
+
+var sample20Questions = generate20DefaultQuestions();
+var topicsStore = { 
+    "Ngữ Văn 7 - Khúc nhạc tâm hồn": { mainTitle: "📖 VÒNG QUAY MAY MẮN - NGỮ VĂN 7", subTitle: "Chủ đề: Khúc nhạc tâm hồn", questions: sample20Questions },
+    "Toán 7 - Quy Tắc Dấu Ngoặc": { mainTitle: "📐 VÒNG QUAY MAY MẮN - TOÁN 7", subTitle: "Chủ đề: Quy tắc dấu ngoặc và tính chất", questions: sample20Questions }
+};
+
+var currentTopicKey = "Ngữ Văn 7 - Khúc nhạc tâm hồn";
+var currentGameMode = "test"; 
+var currentWeek = 6; 
+var studentsData = []; var parsedQuestions = []; var sessionHistory = [];
+var globalHistoryTest = []; var globalHistoryReal = [];
+var cumulativeScoresTest = {}; var cumulativeScoresReal = {};
+var usedQuestionIndices = []; var currentAngle = 0; var isSpinning = false;
+var selectedStudentObj = null; var currentQObj = null; var shuffledOptions = []; var timer = null; var timeLeft = 30;
+var colors = ["#ef4444", "#f97316", "#f59e0b", "#10b981", "#06b6d4", "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6", "#6366f1"];
+
+function fetchQuestionsFromLink() {
+    var url = document.getElementById("qbank-url-input").value.trim();
+    if (!url) { alert("⚠️ Vui lòng dán đường link bộ đề vào ô trước!"); return; }
+
+    if (url.includes("docs.google.com/document/d/")) {
+        var docIdMatch = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+        if (docIdMatch && docIdMatch[1]) {
+            url = "https://docs.google.com/document/d/" + docIdMatch[1] + "/export?format=txt";
+        }
+    }
+
+    alert("🔄 Đang kết nối và tải câu hỏi từ đường link...");
+    fetch(url)
+        .then(function(response) {
+            if (!response.ok) throw new Error("Không thể tải link trực tiếp do hạn chế bảo mật.");
+            return response.text();
+        })
+        .then(function(textData) {
+            document.getElementById("raw-qbank-import-input").value = textData;
+            parseRawImportToQuestions();
+        })
+        .catch(function(err) {
+            if (confirm("⚠️ Trình duyệt chặn tải tự động từ link này do chính sách bảo mật trang web (CORS).\n\nThầy (cô) chủ nhiệm có muốn mở trang web đó ra để Copy (Ctrl+A -> Ctrl+C) và Dán vào khung bên dưới không?")) {
+                window.open(url, "_blank");
+            }
+        });
+}
+
+function importFromWord(fileInput) {
+    var file = fileInput.files[0]; if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        mammoth.extractRawText({ arrayBuffer: e.target.result }).then(function(result) {
+            document.getElementById("raw-qbank-import-input").value = result.value;
+            alert("📄 Đã đọc xong dữ liệu từ file Word!\nHãy bấm '⚡ CHUYỂN THÀNH CÂU HỎI' để xem danh sách.");
+        });
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function importFromPDF(fileInput) {
+    var file = fileInput.files[0]; if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        var typedarray = new Uint8Array(e.target.result);
+        pdfjsLib.getDocument(typedarray).promise.then(function(pdf) {
+            var totalPages = pdf.numPages, fullText = "", count = 0;
+            for (var i = 1; i <= totalPages; i++) {
+                pdf.getPage(i).then(function(page) {
+                    page.getTextContent().then(function(textContent) {
+                        fullText += textContent.items.map(function(item) { return item.str; }).join(" ") + "\n";
+                        count++;
+                        if (count === totalPages) {
+                            document.getElementById("raw-qbank-import-input").value = fullText;
+                            alert("📕 Đã trích xuất xong dữ liệu từ file PDF!\nHãy bấm '⚡ CHUYỂN THÀNH CÂU HỎI' để xem danh sách.");
+                        }
+                    });
+                });
+            }
+        });
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function parseRawImportToQuestions() {
+    var rawText = document.getElementById("raw-qbank-import-input").value.trim();
+    if (!rawText) { alert("⚠️ Vui lòng nhập nội dung câu hỏi trước!"); return; }
+
+    var lines = rawText.split(/\r?\n/);
+    var newQuestions = [], currentQ = null;
+
+    lines.forEach(function(line) {
+        var trimmed = line.trim();
+        if (!trimmed || /^Mức độ[:\s]*/i.test(trimmed)) return;
+
+        if (/^(Câu\s*\d+[:\.]|\d+[\.\:])\s*/i.test(trimmed)) {
+            if (currentQ) newQuestions.push(currentQ);
+            currentQ = { id: newQuestions.length + 1, level: "Thông hiểu", timeLimit: 30, q: trimmed, opts: ["", "", "", ""], ans: 0, exp: "Lời giải chi tiết..." };
+        } else if (currentQ) {
+            var cleanOpt = trimmed.replace(/^\*\s*/, '');
+            if (/^A[\.\:]\s*/i.test(cleanOpt)) { currentQ.opts[0] = cleanOpt; if (trimmed.startsWith("*")) currentQ.ans = 0; }
+            else if (/^B[\.\:]\s*/i.test(cleanOpt)) { currentQ.opts[1] = cleanOpt; if (trimmed.startsWith("*")) currentQ.ans = 1; }
+            else if (/^C[\.\:]\s*/i.test(cleanOpt)) { currentQ.opts[2] = cleanOpt; if (trimmed.startsWith("*")) currentQ.ans = 2; }
+            else if (/^D[\.\:]\s*/i.test(cleanOpt)) { currentQ.opts[3] = cleanOpt; if (trimmed.startsWith("*")) currentQ.ans = 3; }
+            else if (/^(Đáp án|Đáp án đúng|ĐA)[:\s]*([A-D])/i.test(trimmed)) {
+                var match = trimmed.match(/(?:Đáp án|Đáp án đúng|ĐA)[:\s]*([A-D])/i);
+                if (match) currentQ.ans = match[1].toUpperCase().charCodeAt(0) - 65;
+            } else if (/^(Giải thích|Lời giải|HD|Hướng dẫn)[:\s]*/i.test(trimmed)) {
+                currentQ.exp = trimmed.replace(/^(Giải thích|Lời giải|HD|Hướng dẫn)[:\s]*/i, '');
+            } else if (currentQ.opts[0] === "") currentQ.q += " " + trimmed;
+        }
+    });
+
+    if (currentQ) newQuestions.push(currentQ);
+
+    if (newQuestions.length > 0) {
+        parsedQuestions = newQuestions;
+        renderQBankCards();
+        renderMath();
+        alert("🎉 Đã phân tích thành công " + newQuestions.length + " câu hỏi mới từ AI / Văn bản!");
+    } else {
+        alert("⚠️ Không nhận diện được câu hỏi nào. Vui lòng kiểm tra cấu trúc!");
+    }
+}
+
+function importStudentsFromWord(fileInput) {
+    var file = fileInput.files[0]; if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        mammoth.extractRawText({ arrayBuffer: e.target.result }).then(function(result) {
+            document.getElementById("student-text-import").value = result.value;
+            parseTextToTable();
+        });
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function importStudentsFromPDF(fileInput) {
+    var file = fileInput.files[0]; if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        var typedarray = new Uint8Array(e.target.result);
+        pdfjsLib.getDocument(typedarray).promise.then(function(pdf) {
+            var totalPages = pdf.numPages, fullText = "", count = 0;
+            for (var i = 1; i <= totalPages; i++) {
+                pdf.getPage(i).then(function(page) {
+                    page.getTextContent().then(function(textContent) {
+                        fullText += textContent.items.map(function(item) { return item.str; }).join(" ") + "\n";
+                        count++;
+                        if (count === totalPages) {
+                            document.getElementById("student-text-import").value = fullText;
+                            parseTextToTable();
+                        }
+                    });
+                });
+            }
+        });
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function parseTextToTable() {
+    var raw = document.getElementById("student-text-import").value.trim();
+    if (!raw) { alert("⚠️ Chưa có nội dung danh sách!"); return; }
+
+    var lines = raw.split(/\r?\n/);
+    var newList = [];
+
+    lines.forEach(function(line) {
+        var trimmed = line.trim();
+        if (!trimmed || /^(STT|Họ và tên|Danh sách|Lớp)/i.test(trimmed)) return;
+
+        var level = "Đạt";
+        if (/xuất sắc/i.test(trimmed)) level = "Xuất sắc";
+        else if (/giỏi/i.test(trimmed)) level = "Giỏi";
+        else if (/khá/i.test(trimmed)) level = "Khá";
+        else if (/chưa đạt/i.test(trimmed)) level = "Chưa đạt";
+        else if (/trung bình|đạt/i.test(trimmed)) level = "Đạt";
+
+        var conduct = "Tốt";
+        if (/chưa đạt/i.test(trimmed)) conduct = "Chưa đạt";
+        else if (/đạt/i.test(trimmed)) conduct = "Đạt";
+        else if (/khá/i.test(trimmed)) conduct = "Khá";
+        else if (/tốt/i.test(trimmed)) conduct = "Tốt";
+
+        var cleanName = trimmed.replace(/^\d+[\.\:\-\s]+/, '').replace(/-(Xuất sắc|Giỏi|Khá|Đạt|Chưa đạt|Tốt)/gi, '').trim();
+        if (cleanName) {
+            var parts = cleanName.split(/\s+/);
+            var shortWheelName = parts.length >= 2 ? parts[parts.length - 2] + " " + parts[parts.length - 1] : cleanName;
+            newList.push({ name: cleanName, wheelName: shortWheelName, level: level, conduct: conduct, priority: false });
+        }
+    });
+
+    if (newList.length > 0) {
+        studentsData = newList;
+        renderStudentTable();
+        alert("🎉 Đã nhập thành công " + newList.length + " học sinh!");
+    } else {
+        alert("⚠️ Không trích xuất được danh sách học sinh!");
+    }
+}
+
+function removeAllStudents() {
+    if (!isAdminLoggedIn) {
+        alert("🔒 Thao tác xóa dữ liệu danh sách học sinh yêu cầu Thầy (cô) chủ nhiệm đăng nhập quyền ADMIN!");
+        return;
+    }
+    if (confirm("⚠️ Thầy (cô) chủ nhiệm có chắc chắn muốn XÓA TOÀN BỘ danh sách học sinh hiện tại không?")) {
+        studentsData = [];
+        renderStudentTable();
+        drawWheel();
+        alert("🗑️ Đã xóa sạch danh sách học sinh!");
+    }
+}
+
+function resetDefaultStudents() {
+    if (confirm("Khôi phục lại danh sách lớp mặc định 43 bạn?")) {
+        studentsData = JSON.parse(JSON.stringify(defaultStudents));
+        renderStudentTable();
+        drawWheel();
+    }
+}
+
+function renderStudentTable() {
+    var tbody = document.getElementById("student-table-body");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    var countLabel = document.getElementById("st-count-label");
+    if (countLabel) countLabel.innerText = studentsData.length;
+
+    studentsData.forEach(function(st, idx) {
+        var tr = document.createElement("tr");
+        tr.innerHTML = '<td style="text-align:center;">' + (idx + 1) + '</td>' +
+            '<td><input type="text" value="' + st.name + '" onchange="studentsData[' + idx + '].name=this.value;"></td>' +
+            '<td><input type="text" value="' + (st.wheelName || st.name) + '" style="color:#fde047;" onchange="studentsData[' + idx + '].wheelName=this.value;"></td>' +
+            '<td><select onchange="studentsData[' + idx + '].level=this.value;">' +
+                '<option value="Xuất sắc"' + (st.level==='Xuất sắc'?' selected':'') + '>Xuất sắc</option>' +
+                '<option value="Giỏi"' + (st.level==='Giỏi'?' selected':'') + '>Giỏi</option>' +
+                '<option value="Khá"' + (st.level==='Khá'?' selected':'') + '>Khá</option>' +
+                '<option value="Đạt"' + (st.level==='Đạt'?' selected':'') + '>Đạt</option>' +
+                '<option value="Chưa đạt"' + (st.level==='Chưa đạt'?' selected':'') + '>Chưa đạt</option>' +
+            '</select></td>' +
+            '<td><select onchange="studentsData[' + idx + '].conduct=this.value;">' +
+                '<option value="Tốt"' + (st.conduct==='Tốt'?' selected':'') + '>Tốt</option>' +
+                '<option value="Khá"' + (st.conduct==='Khá'?' selected':'') + '>Khá</option>' +
+                '<option value="Đạt"' + (st.conduct==='Đạt'?' selected':'') + '>Đạt</option>' +
+                '<option value="Chưa đạt"' + (st.conduct==='Chưa đạt'?' selected':'') + '>Chưa đạt</option>' +
+            '</select></td>' +
+            '<td style="text-align:center;"><input type="checkbox" ' + (st.priority?'checked':'') + ' onchange="studentsData[' + idx + '].priority=this.checked;" style="width:20px; height:20px; cursor:pointer;"></td>' +
+            '<td style="text-align:center;"><button class="btn-delete-row" ' + (!isAdminLoggedIn ? 'disabled' : '') + ' onclick="deleteStudent(' + idx + ')">🗑️ Xóa</button></td>';
+        tbody.appendChild(tr);
+    });
+}
+
+function addNewStudent() {
+    studentsData.push({ name: "Học sinh mới", wheelName: "Học sinh", level: "Đạt", conduct: "Tốt", priority: false });
+    renderStudentTable();
+}
+
+function deleteStudent(idx) {
+    if (!isAdminLoggedIn) {
+        alert("🔒 Thao tác xóa học sinh yêu cầu Thầy (cô) chủ nhiệm đăng nhập quyền ADMIN!");
+        return;
+    }
+    studentsData.splice(idx, 1);
+    renderStudentTable();
+}
+
+function saveStudentsFromTable() { 
+    saveStudentsData(); 
+    populateMCDropdown(); 
+    drawWheel(); 
+    closeModal("student-modal-box"); 
+    if (db) db.collection("students").doc("class_list").set({ list: studentsData });
+    alert("💾 Đã lưu danh sách học sinh và đồng bộ Đám mây thành công!"); 
+}
+
+function toggleSpinMode(mode) {
+    currentSpinMode = mode;
+    if (mode === 'priority') {
+        var count = studentsData.filter(function(s) { return s.priority; }).length;
+        if (count === 0) alert("⚠️ Chưa có học sinh nào được tích chọn 'Ưu tiên gọi'!");
+        else alert("⭐ Đã kích hoạt Chế Độ Tích Chọn Ngầm (" + count + " bạn)!");
+    } else alert("🌐 Đã chuyển về Chế Độ Quay Toàn Bộ Lớp.");
+}
+
+function getRandomQuestionForStudent(studentObj) {
+    if (parsedQuestions.length === 0) return null;
+    var levelFilter = ["Nhận biết", "Thông hiểu"];
+    if (studentObj.level === "Khá") levelFilter = ["Thông hiểu", "Vận dụng"];
+    else if (studentObj.level === "Giỏi" || studentObj.level === "Xuất sắc") levelFilter = ["Vận dụng", "Vận dụng cao"];
+
+    var matching = parsedQuestions.filter(function(q, index) { return !usedQuestionIndices.includes(index) && levelFilter.includes(q.level); });
+    if (matching.length === 0) matching = parsedQuestions.filter(function(q, index) { return !usedQuestionIndices.includes(index); });
+    if (matching.length === 0) { usedQuestionIndices = []; matching = parsedQuestions; }
+
+    var chosen = matching[Math.floor(Math.random() * matching.length)];
+    usedQuestionIndices.push(parsedQuestions.indexOf(chosen));
+    return chosen;
+}
+
+function spinWheel() {
+    if (isLockdownActive || isSpinning || studentsData.length === 0) return;
+    isSpinning = true; document.getElementById("student-winner-modal").style.display = "none"; document.getElementById("spin-btn").disabled = true;
+    totalSpinCountThisSession++;
+    var winnerIdx = -1; var candidateIndices = [];
+
+    if (currentSpinMode === 'priority') {
+        studentsData.forEach(function(st, idx) { if (st.priority) candidateIndices.push(idx); });
+    }
+    if (candidateIndices.length === 0) {
+        studentsData.forEach(function(st, idx) { candidateIndices.push(idx); });
+    }
+
+    var mcIndexInClass = studentsData.findIndex(function(s) { return s.name === selectedMCName; });
+    if (!hasMCBeenCalledThisSession && mcIndexInClass !== -1 && totalSpinCountThisSession >= 4 && (totalSpinCountThisSession >= 7 || Math.random() < 0.5)) {
+        winnerIdx = mcIndexInClass; hasMCBeenCalledThisSession = true;
+    } else {
+        winnerIdx = candidateIndices[Math.floor(Math.random() * candidateIndices.length)];
+    }
+
+    var sliceAngle = (2 * Math.PI) / studentsData.length;
+    var targetAngle = (3 * Math.PI / 2) - (winnerIdx * sliceAngle + sliceAngle / 2);
+    var finalAngle = Math.ceil(currentAngle / (2 * Math.PI)) * (2 * Math.PI) + (10 * Math.PI) + targetAngle;
+
+    var startAngle = currentAngle, duration = 4000, startTime = performance.now();
+    function animate(now) {
+        var elapsed = now - startTime;
+        if (elapsed < duration) {
+            var t = elapsed / duration, easeOut = 1 - Math.pow(1 - t, 4);
+            currentAngle = startAngle + (finalAngle - startAngle) * easeOut;
+            drawWheel(); requestAnimationFrame(animate);
+        } else {
+            currentAngle = finalAngle; drawWheel(); isSpinning = false;
+            document.getElementById("spin-btn").disabled = false;
+            selectedStudentObj = studentsData[winnerIdx];
+            currentQObj = getRandomQuestionForStudent(selectedStudentObj);
+            
+            var winnerTitleText = selectedStudentObj.name;
+            if (selectedStudentObj.name === selectedMCName) winnerTitleText += " (🎙️ MC LÊN BẢNG!)";
+
+            document.getElementById("winner-name").innerText = winnerTitleText;
+            document.getElementById("student-winner-modal").style.display = "block";
+        }
+    }
+    requestAnimationFrame(animate);
+}
+
+function drawWheel() {
+    var cvs = document.getElementById("wheel-canvas"); if (!cvs) return;
+    var ctx = cvs.getContext("2d"); var n = studentsData.length; if (n === 0) return;
+    var sliceAngle = (2 * Math.PI) / n; var centerX = 500, centerY = 500, radius = 480;
+    ctx.clearRect(0, 0, 1000, 1000);
+
+    for (var i = 0; i < n; i++) {
+        var startA = currentAngle + i * sliceAngle; var endA = startA + sliceAngle;
+        ctx.beginPath(); ctx.moveTo(centerX, centerY); ctx.arc(centerX, centerY, radius, startA, endA); ctx.closePath();
+        ctx.fillStyle = colors[i % colors.length]; ctx.fill(); ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 2.5; ctx.stroke();
+        ctx.save(); ctx.translate(centerX, centerY); ctx.rotate(startA + sliceAngle / 2);
+        ctx.textAlign = "right"; ctx.fillStyle = "#ffffff"; 
+        ctx.font = "bold 44px Arial";
+        
+        var nameToShow = studentsData[i].wheelName || studentsData[i].name;
+        ctx.fillText(nameToShow, radius - 18, 14); 
+        ctx.restore();
+    }
+}
+
+function initApp() {
+    var weekSel = document.getElementById("week-select"); 
+    var histWeekSel = document.getElementById("history-week-filter");
+    
+    if (weekSel) weekSel.innerHTML = ""; 
+    if (histWeekSel) histWeekSel.innerHTML = "<option value='all'>Tất cả các tuần</option>";
+
+    var todayIso = getIsoToday(); 
+    var parts = todayIso.split("-");
+    var todayObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+
+    currentWeek = calculateWeekFromDate(todayObj);
+
+    for (var w = 1; w <= 35; w++) {
+        var opt = document.createElement("option"); 
+        opt.value = w; 
+        opt.innerText = "Tuần " + w;
+        if (w === currentWeek) opt.selected = true; 
+        if (weekSel) weekSel.appendChild(opt);
+
+        var optH = document.createElement("option"); 
+        optH.value = w; 
+        optH.innerText = "Tuần " + w;
+        if (histWeekSel) histWeekSel.appendChild(optH);
+    }
+
+    var datePicker = document.getElementById("session-date-picker");
+    var dateDisplay = document.getElementById("session-date-display");
+    if (datePicker) datePicker.value = todayIso;
+    if (dateDisplay) dateDisplay.value = formatDateFromIso(todayIso);
+
+    updateDayOfWeekDropdownFromIso(todayIso); 
+
+    var lockInput = document.getElementById("lock-time-input");
+    if (lockInput) lockInput.value = lockTimeTarget;
+
+    try { 
+        var savedSt = localStorage.getItem("wheel_v50_students"); 
+        studentsData = savedSt ? JSON.parse(savedSt) : defaultStudents; 
+    } catch(e) { 
+        studentsData = defaultStudents; 
+    }
+
+    try { 
+        var savedSchStore = localStorage.getItem("wheel_v50_schedule_by_week"); 
+        scheduleByWeekStore = savedSchStore ? JSON.parse(savedSchStore) : defaultScheduleByWeek; 
+    } catch(e) { 
+        scheduleByWeekStore = defaultScheduleByWeek; 
+    }
+
+    populateScheduleModalWeekDropdown(); 
+    populateMCDropdown();
+
+    try { 
+        var savedTopics = localStorage.getItem("wheel_v50_topics_store"); 
+        if (savedTopics) topicsStore = JSON.parse(savedTopics); 
+    } catch(e) {}
+
+    renderTopicSelect(); 
+
+    var dayOfWeek = todayObj.getDay() + 1;
+    applyScheduleForDay(dayOfWeek >= 2 && dayOfWeek <= 7 ? dayOfWeek : 2);
+
+    try {
+        globalHistoryTest = JSON.parse(localStorage.getItem("wheel_v50_global_history_test")) || [];
+        globalHistoryReal = JSON.parse(localStorage.getItem("wheel_v50_global_history_real")) || [];
+        cumulativeScoresTest = JSON.parse(localStorage.getItem("wheel_v50_cumulative_scores_test")) || {};
+        cumulativeScoresReal = JSON.parse(localStorage.getItem("wheel_v50_cumulative_scores_real")) || {};
+    } catch(e) {}
+
+    renderStudentTable(); 
+    renderScheduleTableForWeek(currentWeek); 
+    drawWheel(); 
+    updateRoleUI();
+    updateTeacherUI();
+
+    var classInput = document.getElementById("class-name-input");
+    if (classInput) classInput.value = currentClassName;
+
+    var yearSel = document.getElementById("school-year-select");
+    if (yearSel) yearSel.value = currentSchoolYear;
+
+    if (db) {
+        db.collection("students").doc("class_list").get().then((doc) => {
+            if (doc.exists) { 
+                studentsData = doc.data().list || []; 
+                renderStudentTable(); 
+                drawWheel(); 
+            }
+        });
+    }
+}
+
+function onActiveStudentChanged(newName) {
+    var found = studentsData.find(function(s) { return s.name === newName; }); if (found) selectedStudentObj = found;
+}
+
+function useSkip() {
+    if (parsedQuestions.length <= 1) { alert("⚠️ Không có câu hỏi tương đương!"); return; }
+    var remaining = parsedQuestions.filter(function(q, index) { return !usedQuestionIndices.includes(index) && q.id !== currentQObj.id; });
+    if (remaining.length === 0) remaining = parsedQuestions.filter(function(q) { return q.id !== currentQObj.id; });
+    var newQ = remaining[Math.floor(Math.random() * remaining.length)];
+    usedQuestionIndices.push(parsedQuestions.indexOf(newQ)); currentQObj = newQ;
+    document.getElementById("life-skip").disabled = true; document.getElementById("life-skip").innerText = "🔄 Đã đổi câu hỏi"; loadQuestion();
+}
+
+function applyInitialStudentPenalty() {
+    if (!selectedStudentObj) return;
+    var ptsWrong = parseFloat(document.getElementById("pts-wrong").value) || -2;
+    var activeStudentName = selectedStudentObj.name; var curIso = document.getElementById("session-date-picker").value || getIsoToday();
+
+    var penaltyRecord = {
+        week: currentWeek, isoDate: curIso, date: formatDateFromIso(curIso), topic: currentTopicKey, student: activeStudentName,
+        q: currentQObj.q + " (Không làm được)", opts: currentQObj.opts, exp: currentQObj.exp, chosenOpt: "Không làm được", isCorrect: false, pts: ptsWrong
+    };
+
+    sessionHistory.push(penaltyRecord);
+    updateCumulativeScore(activeStudentName, ptsWrong, currentTopicKey);
+
+    alert("⚠️ Bạn " + activeStudentName + " không làm được! Đã trừ " + Math.abs(ptsWrong) + " điểm.");
+    document.getElementById("btn-penalty").disabled = true;
+}
+
+function use5050() {
+    var opts = document.querySelectorAll(".btn-opt"); var wrongIndices = [];
+    shuffledOptions.forEach(function(opt, idx) { if (!opt.isCorrect) wrongIndices.push(idx); });
+    shuffleArray(wrongIndices);
+    if (wrongIndices.length >= 2) { opts[wrongIndices[0]].style.visibility = "hidden"; opts[wrongIndices[1]].style.visibility = "hidden"; }
+    document.getElementById("life-50").disabled = true;
+}
+
+function loadQuestion() {
+    var q = currentQObj; 
+    if (!q) return;
+
+    var qSec = q.timeLimit || 30;
+    document.getElementById("q-text").innerHTML = '<span style="font-size:20px; color:#38bdf8;">[' + (q.level || "Thông hiểu") + ' - ⏱️ ' + qSec + 's]</span> ' + q.q;
+
+    shuffledOptions = (q.opts || []).map(function(optText, idx) { 
+        return { text: optText, isCorrect: (idx === q.ans) }; 
+    });
+    shuffleArray(shuffledOptions);
+
+    var container = document.getElementById("opt-container"); 
+    container.innerHTML = "";
+
+    shuffledOptions.forEach(function(optObj, idx) {
+        var btn = document.createElement("button"); 
+        btn.className = "btn-opt"; 
+        btn.innerHTML = optObj.text;
+        btn.onclick = function() { selectAnswer(idx); }; 
+        container.appendChild(btn);
+    });
+
+    document.getElementById("exp-box").style.display = "none"; 
+    document.getElementById("btn-next").style.display = "none";
+    
+    renderMath(); 
+    startTimer(qSec);
+}
+
+function selectAnswer(chosenIndex) {
+    try {
+        clearInterval(timer); 
+        var q = currentQObj;
+        if (!q) return;
+
+        var opts = document.querySelectorAll(".btn-opt"); 
+        for (var i = 0; i < opts.length; i++) {
+            opts[i].disabled = true;
+        }
+
+        var ptsCorrect = parseFloat(document.getElementById("pts-correct").value) || 5;
+        var ptsWrong = parseFloat(document.getElementById("pts-wrong").value) || -2;
+
+        var isCorrect = false;
+        if (chosenIndex >= 0 && shuffledOptions && shuffledOptions[chosenIndex]) {
+            isCorrect = !!shuffledOptions[chosenIndex].isCorrect;
+        }
+
+        var pts = isCorrect ? ptsCorrect : ptsWrong;
+        var curIso = document.getElementById("session-date-picker").value || getIsoToday();
+        var activeStudentName = selectedStudentObj ? selectedStudentObj.name : "Học sinh";
+
+        var chosenText = (chosenIndex >= 0 && shuffledOptions && shuffledOptions[chosenIndex]) 
+            ? shuffledOptions[chosenIndex].text 
+            : "Hết giờ / Không chọn";
+
+        var record = {
+            week: currentWeek, isoDate: curIso, date: formatDateFromIso(curIso), topic: currentTopicKey, student: activeStudentName,
+            q: q.q, opts: q.opts, exp: q.exp || "", chosenOpt: chosenText, isCorrect: isCorrect, pts: pts
+        };
+
+        sessionHistory.push(record);
+
+        if (currentGameMode === "real") {
+            globalHistoryReal.push(record); 
+            localStorage.setItem("wheel_v50_global_history_real", JSON.stringify(globalHistoryReal));
+        } else {
+            globalHistoryTest.push(record); 
+            localStorage.setItem("wheel_v50_global_history_test", JSON.stringify(globalHistoryTest));
+        }
+
+        updateCumulativeScore(activeStudentName, pts, currentTopicKey);
+
+        if (chosenIndex >= 0 && opts[chosenIndex]) {
+            if (isCorrect) {
+                opts[chosenIndex].classList.add("correct");
+            } else {
+                opts[chosenIndex].classList.add("wrong");
+                shuffledOptions.forEach(function(opt, idx) {
+                    if (opt.isCorrect && opts[idx]) {
+                        opts[idx].classList.add("correct");
+                    }
+                });
+            }
+        }
+
+        var expBox = document.getElementById("exp-box");
+        var statusTextHtml = isCorrect 
+            ? '<span class="high-contrast-correct">✅ ĐÚNG TRỌN VẸN (+' + ptsCorrect + ' ĐIỂM)</span>'
+            : '<span class="high-contrast-wrong">❌ CHƯA CHÍNH XÁC (' + ptsWrong + ' ĐIỂM)</span>';
+
+        var cleanExpText = q.exp ? q.exp.replace(/^Lời giải:\s*/i, '') : 'Không có lời giải chi tiết.';
+        expBox.innerHTML = statusTextHtml + '<br><div style="margin-top:10px; color:#e2e8f0; font-size:26px;"><strong>💡 Lời giải củng cố:</strong> ' + cleanExpText + '</div>';
+        
+        expBox.style.display = "block"; 
+        document.getElementById("btn-next").style.display = "inline-block";
+        
+        renderMath();
+
+    } catch (err) {
+        console.error("Lỗi chọn đáp án:", err);
+        document.getElementById("btn-next").style.display = "inline-block";
+    }
+}
+
+function updateCumulativeScore(studentName, pointsToAdd, topicName) {
+    if (!studentName) return;
+    var isRealMode = (currentGameMode === "real");
+    var scoreStore = isRealMode ? cumulativeScoresReal : cumulativeScoresTest;
+
+    if (typeof scoreStore[studentName] === 'number') {
+        scoreStore[studentName] += pointsToAdd;
+    } else if (typeof scoreStore[studentName] === 'object' && scoreStore[studentName] !== null) {
+        scoreStore[studentName].total = (scoreStore[studentName].total || 0) + pointsToAdd;
+    } else {
+        scoreStore[studentName] = pointsToAdd;
+    }
+
+    var stObj = studentsData.find(function(s) { return s.name === studentName; });
+    if (stObj) {
+        if (!stObj.topicsDetail) stObj.topicsDetail = {};
+        stObj.topicsDetail[topicName] = (stObj.topicsDetail[topicName] || 0) + pointsToAdd;
+    }
+
+    var storageKey = isRealMode ? "wheel_v50_cumulative_scores_real" : "wheel_v50_cumulative_scores_test";
+    localStorage.setItem(storageKey, JSON.stringify(scoreStore));
+    saveStudentsData();
+
+    if (db) {
+        db.collection("scores").doc(isRealMode ? "cumulative_real" : "cumulative_test").set({
+            [studentName]: scoreStore[studentName]
+        }, { merge: true });
+    }
+}
+
+function onDateChanged(selectedIso) {
+    if (!selectedIso) return;
+    document.getElementById("session-date-display").value = formatDateFromIso(selectedIso);
+
+    var parts = selectedIso.split("-");
+    var chosenDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+
+    currentWeek = calculateWeekFromDate(chosenDate);
+    var weekSel = document.getElementById("week-select");
+    if (weekSel) weekSel.value = currentWeek;
+
+    var schWeekSel = document.getElementById("schedule-week-select");
+    if (schWeekSel) schWeekSel.value = currentWeek;
+
+    updateDayOfWeekDropdownFromIso(selectedIso);
+
+    var dayOfWeek = chosenDate.getDay() + 1;
+    if (dayOfWeek >= 2 && dayOfWeek <= 7) {
+        applyScheduleForDay(dayOfWeek);
+    }
+}
+
+function getDateFromWeekAndDay(weekNum, dayVal) {
+    var monday = getDateFromWeek(weekNum);
+    var dVal = parseInt(dayVal);
+    var offset = (dVal === 1) ? 6 : (dVal - 2);
+    var targetDate = new Date(monday);
+    targetDate.setDate(monday.getDate() + offset);
+    return targetDate;
+}
+
+function updateDayOfWeekDropdownFromIso(isoDateStr) {
+    if (!isoDateStr) return;
+    var parts = isoDateStr.split("-");
+    var d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    var dayNum = d.getDay() + 1;
+    var sel = document.getElementById("day-of-week-select");
+    if (sel) sel.value = dayNum;
+}
+
+function onDayOfWeekDropdownChanged(newDayVal) {
+    var targetDate = getDateFromWeekAndDay(currentWeek, newDayVal);
+    var isoStr = targetDate.getFullYear() + '-' + String(targetDate.getMonth() + 1).padStart(2, '0') + '-' + String(targetDate.getDate()).padStart(2, '0');
+    
+    document.getElementById("session-date-picker").value = isoStr;
+    document.getElementById("session-date-display").value = formatDateFromIso(isoStr);
+
+    applyScheduleForDay(parseInt(newDayVal));
+}
+
+function onWeekChanged(val) { 
+    currentWeek = parseInt(val) || 1; 
+    var mondayDate = getDateFromWeek(currentWeek);
+    var isoStr = mondayDate.getFullYear() + '-' + String(mondayDate.getMonth() + 1).padStart(2, '0') + '-' + String(mondayDate.getDate()).padStart(2, '0');
+    document.getElementById("session-date-picker").value = isoStr;
+    document.getElementById("session-date-display").value = formatDateFromIso(isoStr);
+
+    var schWeekSel = document.getElementById("schedule-week-select");
+    if (schWeekSel) schWeekSel.value = currentWeek;
+    renderScheduleTableForWeek(currentWeek);
+
+    var dayOfWeek = mondayDate.getDay() + 1;
+    applyScheduleForDay(dayOfWeek >= 2 && dayOfWeek <= 7 ? dayOfWeek : 2);
+}
+
+function toggleGameMode(mode) {
+    currentGameMode = mode;
+    var selElem = document.getElementById("game-mode-select"); var cumulTitle = document.getElementById("cumul-mode-title");
+    if (mode === 'real') { selElem.classList.add("real-mode"); if (cumulTitle) cumulTitle.innerText = "Thi Thật"; alert("🎯 ĐÃ CHUYỂN SANG CHẾ ĐỘ THI THẬT!"); }
+    else { selElem.classList.remove("real-mode"); if (cumulTitle) cumulTitle.innerText = "Thi Thử"; alert("🧪 ĐÃ CHUYỂN SANG CHẾ ĐỘ THI THỬ!"); }
+}
+
+function logoutAdmin() { isAdminLoggedIn = false; updateRoleUI(); alert("🔒 Đã đăng xuất Quyền Quản Trị!"); }
+
+function updateRoleUI() {
+    var badge = document.getElementById("role-badge"); var loginBtn = document.getElementById("btn-admin-login");
+    var changePassBtn = document.getElementById("btn-change-pass"); var logoutBtn = document.getElementById("btn-admin-logout");
+    var adminElems = document.querySelectorAll(".admin-only");
+
+    if (isAdminLoggedIn) {
+        badge.className = "admin-badge badge-admin"; badge.innerText = "🔑 QUYỀN QUẢN TRỊ (" + teacherGender.toUpperCase() + ")";
+        loginBtn.style.display = "none"; changePassBtn.style.display = "inline-block"; logoutBtn.style.display = "inline-block";
+        adminElems.forEach(function(el) { el.disabled = false; });
+        document.getElementById("pts-correct").readOnly = false; document.getElementById("pts-wrong").readOnly = false;
+    } else {
+        badge.className = "admin-badge badge-student"; badge.innerText = "👤 QUYỀN HỌC SINH / MC";
+        loginBtn.style.display = "inline-block"; changePassBtn.style.display = "none"; logoutBtn.style.display = "none";
+        adminElems.forEach(function(el) { el.disabled = true; });
+        document.getElementById("pts-correct").readOnly = true; document.getElementById("pts-wrong").readOnly = true;
+    }
+    renderStudentTable();
+    checkLockdownStatus();
+}
+
+function closeApp() { if (confirm("Đóng ứng dụng?")) { window.close(); document.body.innerHTML = "<div style='text-align:center; padding:100px; font-size:30px; color:#38bdf8;'>Chương trình đã đóng an toàn.</div>"; } }
+
+function openModal(id) { 
+    if (id === 'schedule-modal-box') {
+        var schWeekSel = document.getElementById("schedule-week-select");
+        if (schWeekSel) schWeekSel.value = currentWeek;
+        renderScheduleTableForWeek(currentWeek);
+    }
+    document.getElementById(id).style.display = "flex"; 
+}
+function closeModal(id) { document.getElementById(id).style.display = "none"; }
+function changePts(id, step) { var el = document.getElementById(id); el.value = (parseFloat(el.value) || 0) + step; }
+
+function renderMath() { 
+    if (window.MathJax && window.MathJax.typesetPromise) {
+        return window.MathJax.typesetPromise().catch(function(err) { console.log("MathJax error: ", err); });
+    }
+    return Promise.resolve();
+}
+
+function shuffleArray(arr) { for (var i = arr.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var temp = arr[i]; arr[i] = arr[j]; arr[j] = temp; } return arr; }
+function triggerDatePicker(id) { var el = document.getElementById(id); if (el) { if (typeof el.showPicker === 'function') el.showPicker(); else el.focus(); } }
+function getIsoToday() {
+    var now = new Date();
+    var year = now.getFullYear();
+    var month = String(now.getMonth() + 1).padStart(2, '0');
+    var day = String(now.getDate()).padStart(2, '0');
+    return year + "-" + month + "-" + day;
+}
+function formatDateFromIso(iso) { if (!iso) return ""; var p = iso.split("-"); return p.length === 3 ? p[2] + "/" + p[1] + "/" + p[0] : iso; }
+
+function saveStudentsData() { localStorage.setItem("wheel_v50_students", JSON.stringify(studentsData)); }
+
+function populateMCDropdown() {
+    var mcTopSel = document.getElementById("mc-top-dropdown"); if (!mcTopSel) return;
+    mcTopSel.innerHTML = "";
+    studentsData.forEach(function(st) {
+        var opt = document.createElement("option"); opt.value = st.name; opt.innerText = st.name;
+        if (st.name === selectedMCName) opt.selected = true;
+        mcTopSel.appendChild(opt);
+    });
+}
+
+function renderTopicSelect() {
+    var sel = document.getElementById("topic-select"); sel.innerHTML = "";
+    Object.keys(topicsStore).forEach(function(key) {
+        var opt = document.createElement("option"); opt.value = key; opt.innerText = key;
+        if (key === currentTopicKey) opt.selected = true;
+        sel.appendChild(opt);
+    });
+}
+
+function switchTopicPreset() {
+    var selVal = document.getElementById("topic-select").value || currentTopicKey;
+    if (topicsStore[selVal]) {
+        currentTopicKey = selVal; var t = topicsStore[selVal];
+        document.getElementById("topic-title-input").value = currentTopicKey;
+        document.getElementById("display-main-title").innerText = t.mainTitle;
+        document.getElementById("display-sub-title").innerText = t.subTitle;
+        parsedQuestions = t.questions || generate20DefaultQuestions();
+        renderQBankCards();
+        renderMath();
+    }
+}
+
+function renderQBankCards() {
+    var container = document.getElementById("qbank-cards-container"); container.innerHTML = "";
+    document.getElementById("q-total-count").innerText = parsedQuestions.length;
+
+    parsedQuestions.forEach(function(q, idx) {
+        var card = document.createElement("div"); card.className = "q-edit-box";
+        var optGridHtml = '';
+        for (var o = 0; o < 4; o++) {
+            var optText = q.opts[o] || ""; var isChecked = (q.ans === o) ? 'checked' : '';
+            optGridHtml += '<div class="opt-input-group">' +
+                '<input type="radio" name="correct_ans_' + idx + '" ' + isChecked + ' onchange="parsedQuestions[' + idx + '].ans=' + o + ';">' +
+                '<span style="font-weight:bold; color:#38bdf8;">' + String.fromCharCode(65 + o) + ':</span>' +
+                '<input type="text" value="' + optText + '" onchange="parsedQuestions[' + idx + '].opts[' + o + ']=this.value;">' +
+            '</div>';
+        }
+
+        card.innerHTML = '<div class="q-edit-row">' +
+            '<span style="color:#fde047; font-weight:bold; font-size:18px;">Câu ' + (idx + 1) + ':</span>' +
+            '<select style="width:130px;" onchange="parsedQuestions[' + idx + '].level=this.value;">' +
+                '<option value="Nhận biết"' + (q.level==='Nhận biết'?' selected':'') + '>Nhận biết</option>' +
+                '<option value="Thông hiểu"' + (q.level==='Thông hiểu'?' selected':'') + '>Thông hiểu</option>' +
+                '<option value="Vận dụng"' + (q.level==='Vận dụng'?' selected':'') + '>Vận dụng</option>' +
+                '<option value="Vận dụng cao"' + (q.level==='Vận dụng cao'?' selected':'') + '>Vận dụng cao</option>' +
+            '</select>' +
+            '<span>⏱️ Giây:</span>' +
+            '<input type="number" value="' + (q.timeLimit||30) + '" style="width:60px; text-align:center;" onchange="parsedQuestions[' + idx + '].timeLimit=parseInt(this.value)||30;">' +
+            '<button class="btn-delete-row" style="margin-left:auto;" onclick="deleteQuestionItem(' + idx + ')">🗑️ Xóa</button>' +
+        '</div>' +
+        '<input type="text" value="' + q.q + '" style="margin-bottom:6px;" onchange="parsedQuestions[' + idx + '].q=this.value;">' +
+        '<div class="q-opt-grid">' + optGridHtml + '</div>';
+
+        container.appendChild(card);
+    });
+}
+
+function addNewQuestionItem() {
+    parsedQuestions.push({
+        id: parsedQuestions.length + 1, level: "Thông hiểu", timeLimit: 30,
+        q: "Câu " + (parsedQuestions.length + 1) + ": Nội dung câu hỏi...",
+        opts: ["A. Đáp án A", "B. Đáp án B", "C. Đáp án C", "D. Đáp án D"], ans: 0, exp: "Hướng dẫn chi tiết..."
+    });
+    renderQBankCards();
+    renderMath();
+}
+
+function deleteQuestionItem(idx) { if (confirm("Xóa câu hỏi này?")) { parsedQuestions.splice(idx, 1); renderQBankCards(); } }
+
+function deleteCurrentTopic() {
+    if (!isAdminLoggedIn) {
+        alert("🔒 Thao tác xóa chủ đề yêu cầu Thầy (cô) chủ nhiệm đăng nhập quyền ADMIN!");
+        return;
+    }
+    if (confirm("⚠️ Thầy (cô) chủ nhiệm có chắc chắn muốn xóa chủ đề '" + currentTopicKey + "' không?")) {
+        delete topicsStore[currentTopicKey];
+        localStorage.setItem("wheel_v50_topics_store", JSON.stringify(topicsStore));
+        var remainingKeys = Object.keys(topicsStore);
+        if (remainingKeys.length > 0) {
+            currentTopicKey = remainingKeys[0];
+        } else {
+            currentTopicKey = "Môn học mới";
+            topicsStore[currentTopicKey] = { mainTitle: "📖 VÒNG QUAY MAY MẮN", subTitle: "Chủ đề mới", questions: [] };
+        }
+        renderTopicSelect();
+        switchTopicPreset();
+        alert("🗑️ Đã xóa chủ đề thành công!");
+    }
+}
+
+function deleteAllTopics() {
+    if (!isAdminLoggedIn) {
+        alert("🔒 Thao tác xóa toàn bộ chủ đề yêu cầu Thầy (cô) chủ nhiệm đăng nhập quyền ADMIN!");
+        return;
+    }
+    if (confirm("⚠️ CẢNH BÁO: Thầy (cô) chủ nhiệm có chắc chắn muốn xóa TOÀN BỘ tất cả các chủ đề/môn học không?")) {
+        topicsStore = {};
+        topicsStore["Ngữ Văn 7 - Mới"] = { mainTitle: "📖 VÒNG QUAY MAY MẮN - NGỮ VĂN 7", subTitle: "Chủ đề mới", questions: [] };
+        currentTopicKey = "Ngữ Văn 7 - Mới";
+        localStorage.setItem("wheel_v50_topics_store", JSON.stringify(topicsStore));
+        renderTopicSelect();
+        switchTopicPreset();
+        alert("🗑️ Đã reset và xóa toàn bộ ngân hàng chủ đề!");
+    }
+}
+
+function saveCurrentTopic() {
+    var key = document.getElementById("topic-title-input").value.trim() || "Môn học mới";
+    topicsStore[key] = { mainTitle: "📖 VÒNG QUAY MAY MẮN - " + key.toUpperCase(), subTitle: "Chủ đề: " + key, questions: parsedQuestions };
+    currentTopicKey = key; localStorage.setItem("wheel_v50_topics_store", JSON.stringify(topicsStore));
+    
+    if (db) db.collection("qbank").doc("week_" + currentWeek).set({ questions: parsedQuestions });
+
+    renderTopicSelect(); switchTopicPreset(); closeModal("qbank-modal-box");
+    alert("✅ Đã lưu danh sách " + parsedQuestions.length + " câu hỏi lên Đám Mây!");
+}
+
+function populateActiveStudentSelect(selectedName) {
+    var sel = document.getElementById("active-student-select"); sel.innerHTML = "";
+    studentsData.forEach(function(st, idx) {
+        var opt = document.createElement("option"); opt.value = st.name; opt.innerText = (idx + 1) + ". " + st.name;
+        if (st.name === selectedName) opt.selected = true;
+        sel.appendChild(opt);
+    });
+}
+
+function goToQuestion() {
+    if (!currentQObj) { showResult(); return; }
+    document.getElementById("wheel-screen").style.display = "none";
+    document.getElementById("quiz-body").style.display = "block";
+    populateActiveStudentSelect(selectedStudentObj.name);
+    
+    document.getElementById("btn-penalty").disabled = false;
+    document.getElementById("life-skip").disabled = false;
+    document.getElementById("life-50").disabled = false;
+loadQuestion();
+}
+
+function startTimer(seconds) {
+    clearInterval(timer); timeLeft = seconds; document.getElementById("timer-val").innerText = timeLeft;
+    timer = setInterval(function() {
+        timeLeft--; document.getElementById("timer-val").innerText = timeLeft;
+        if (timeLeft <= 0) { clearInterval(timer); selectAnswer(-1); }
+    }, 1000);
+}
+
+function backToWheel() {
+    document.getElementById("quiz-body").style.display = "none"; document.getElementById("wheel-screen").style.display = "block"; document.getElementById("student-winner-modal").style.display = "none";
+}
+
+function showResult() {
+    document.getElementById("quiz-body").style.display = "none"; document.getElementById("wheel-screen").style.display = "none"; document.getElementById("result-screen").style.display = "block";
+    var correctContainer = document.getElementById("res-correct-list"); var wrongContainer = document.getElementById("res-wrong-list");
+    correctContainer.innerHTML = ""; wrongContainer.innerHTML = "";
+
+    sessionHistory.forEach(function(item) {
+        var div = document.createElement("div"); div.className = "res-card-item " + (item.isCorrect ? "correct" : "wrong");
+        div.innerHTML = '<div><strong>' + item.student + '</strong></div><div>' + (item.pts > 0 ? '+' + item.pts : item.pts) + ' điểm</div>';
+        div.onclick = function() { openReviewQuestionModal(item); };
+        if (item.isCorrect) correctContainer.appendChild(div); else wrongContainer.appendChild(div);
+    });
+}
+
+function openReviewQuestionModal(item) {
+    document.getElementById("review-student-name").innerText = "👤 Học sinh: " + item.student + " (" + (item.isCorrect ? "✅ Đúng" : "❌ Sai") + ")";
+    var cleanExpText = item.exp ? item.exp.replace(/^Lời giải:\s*/i, '') : '';
+    var html = '<p style="font-size:24px; color:#fff; font-weight:bold; margin-bottom:12px;">' + item.q + '</p>' +
+        '<p style="font-size:20px; color:#fca5a5; margin-bottom:8px;"><strong>Đã chọn:</strong> ' + item.chosenOpt + '</p>' +
+        '<div style="background:#0f172a; padding:12px; border-radius:8px; border-left:6px solid #38bdf8; font-size:20px; color:#e2e8f0;">' +
+            '<strong>💡 Lời giải chi tiết:</strong><br>' + cleanExpText +
+        '</div>';
+    document.getElementById("review-content-box").innerHTML = html;
+    openModal("review-q-modal-box"); renderMath();
+}
+
+function openCumulativeScoresModal() {
+    openModal("cumulative-modal-box");
+    renderCumulativeTable();
+}
+
+function renderCumulativeTable() {
+    var isReal = (currentGameMode === "real");
+    var scoreStore = isReal ? cumulativeScoresReal : cumulativeScoresTest;
+    var table = document.getElementById("cumul-multi-subject-table");
+
+    if (!table) return;
+
+    var scoreList = studentsData.map(function(st) {
+        var rawName = (typeof st === "object") ? st.name : st;
+        var cleanName = String(rawName).replace(/[\u{1F300}-\u{1F9FF}]/gu, '').replace(/\(Top\s*\d+\)/gi, '').trim();
+        
+        var totalScore = 0;
+        if (typeof scoreStore[cleanName] === 'number') {
+            totalScore = scoreStore[cleanName];
+        } else if (typeof scoreStore[rawName] === 'number') {
+            totalScore = scoreStore[rawName];
+        } else if (typeof scoreStore[cleanName] === 'object' && scoreStore[cleanName] !== null) {
+            totalScore = scoreStore[cleanName].total || 0;
+        }
+
+        return { name: cleanName, score: totalScore };
+    });
+
+    scoreList.sort(function(a, b) { return b.score - a.score; });
+
+    var html = "<thead><tr style='background: linear-gradient(90deg, #0284c7, #0d9488); color:#ffffff; font-size:16px;'>" +
+        "<th style='width: 70px; text-align:center; padding:12px;'>STT</th>" +
+        "<th style='text-align:left; padding:12px;'>Họ và Tên Học Sinh</th>" +
+        "<th style='width: 180px; text-align:center; padding:12px;'>Điểm Tích Lũy</th>" +
+        "<th style='width: 150px; text-align:center; padding:12px;'>Thứ Hạng</th>" +
+        "</tr></thead><tbody>";
+
+    var currentRank = 1;
+    scoreList.forEach(function(item, idx) {
+        if (idx > 0 && item.score < scoreList[idx - 1].score) {
+            currentRank = idx + 1;
+        }
+
+        var rankDisplay = "Thứ " + currentRank;
+        var rowBg = (idx % 2 === 0) ? "background-color:#0f172a;" : "background-color:#1e293b;";
+        
+        if (currentRank === 1) rankDisplay = "🥇 Thứ 1";
+        else if (currentRank === 2) rankDisplay = "🥈 Thứ 2";
+        else if (currentRank === 3) rankDisplay = "🥉 Thứ 3";
+
+        var scoreColor = item.score > 0 ? "#4ade80" : (item.score < 0 ? "#fca5a5" : "#cbd5e1");
+        var displayScore = item.score > 0 ? "+" + item.score : item.score;
+
+        html += "<tr style='" + rowBg + " font-size:15px; border-bottom:1px solid #334155;'>" +
+            "<td style='text-align:center; color:#94a3b8; padding:10px;'>" + (idx + 1) + "</td>" +
+            "<td style='padding:10px;'><b style='color:#ffffff;'>" + item.name + "</b></td>" +
+            "<td style='text-align:center; font-weight:bold; color:" + scoreColor + "; padding:10px; font-size:16px;'>" + displayScore + " điểm</td>" +
+            "<td style='text-align:center; font-weight:bold; color:#fde047; padding:10px;'>" + rankDisplay + "</td>" +
+            "</tr>";
+    });
+
+    html += "</tbody>";
+    table.innerHTML = html;
+}
+
+function exportCumulativeScoresToExcel() {
+    var isRealMode = (currentGameMode === "real");
+    var scoreStore = isRealMode ? cumulativeScoresReal : cumulativeScoresTest;
+    var modeName = isRealMode ? "Chính Thức" : "Thử Nghiệm";
+
+    if (!studentsData || studentsData.length === 0) {
+        alert("⚠️ Danh sách học sinh đang trống!");
+        return;
+    }
+
+    var scoreList = studentsData.map(function(st) {
+        var rawName = (typeof st === "object") ? st.name : st;
+        var cleanName = String(rawName).replace(/[\u{1F300}-\u{1F9FF}]/gu, '').replace(/\(Top\s*\d+\)/gi, '').trim();
+        
+        var totalScore = 0;
+        if (typeof scoreStore[cleanName] === 'number') {
+            totalScore = scoreStore[cleanName];
+        } else if (typeof scoreStore[rawName] === 'number') {
+            totalScore = scoreStore[rawName];
+        } else if (typeof scoreStore[cleanName] === 'object' && scoreStore[cleanName] !== null) {
+            totalScore = scoreStore[cleanName].total || 0;
+        }
+
+        return { name: cleanName, score: totalScore };
+    });
+
+    scoreList.sort(function(a, b) { return b.score - a.score; });
+
+    var curIso = document.getElementById("session-date-picker").value || getIsoToday();
+
+    var excelContent = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:x='urn:schemas-microsoft-com:office:excel' xmlns='http://www.w3.org/TR/REC-html40'>" +
+    "<head><meta charset='utf-8'><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>" +
+    "<x:Name>BangDiemTichLuy</x:Name><x:WorksheetOptions>" +
+    "<x:Print><x:ValidPrinterInfo/><x:PaperSizeIndex>9</x:PaperSizeIndex>" +
+    "<x:HorizontalResolution>600</x:HorizontalResolution><x:VerticalResolution>600</x:VerticalResolution></x:Print>" +
+    "<x:PageSetup><x:Layout x:Orientation='Portrait'/>" +
+    "<x:Header x:Margin='0.3'/><x:Footer x:Margin='0.3'/>" +
+    "<x:PageMargins x:Left='0.98' x:Right='0.79' x:Top='0.79' x:Bottom='0.79'/></x:PageSetup>" +
+    "<x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->" +
+    "<style>" +
+    "@page { mso-page-orientation: portrait; margin: 2.0cm 2.0cm 2.0cm 2.5cm; }" +
+    "body { font-family: 'Times New Roman', Times, serif; font-size: 14pt; color: #1e293b; background-color: #ffffff; }" +
+    ".main-title { font-size: 18pt; font-weight: bold; color: #0284c7; text-align: center; height: 45px; vertical-align: middle; text-transform: uppercase; letter-spacing: 0.5px; }" +
+    ".sub-header { font-size: 14pt; color: #334155; text-align: center; height: 28px; vertical-align: middle; font-style: italic; }" +
+    ".border-line { border-bottom: 2.5pt solid #0284c7; height: 4px; }" +
+    "th { background-color: #0284c7; color: #ffffff; font-weight: bold; font-size: 14pt; border: 1pt solid #0284c7; text-align: center; vertical-align: middle; height: 40px; }" +
+    "td { border: 0.5pt solid #cbd5e1; font-size: 14pt; vertical-align: middle; padding: 8px 12px; height: 36px; }" +
+    ".text-center { text-align: center; }" +
+    ".student-name { font-weight: bold; color: #0f172a; white-space: nowrap !important; word-break: keep-all !important; mso-number-format:'\\@'; padding-left: 15px; }" +
+    ".top-1 { background-color: #fef08a; }" +
+    ".top-2 { background-color: #f1f5f9; }" +
+    ".top-3 { background-color: #ffedd5; }" +
+    ".even-row { background-color: #f8fafc; }" +
+    ".score-pos { font-weight: bold; text-align: center; color: #16a34a; font-size: 14pt; }" +
+    ".score-neg { font-weight: bold; text-align: center; color: #dc2626; font-size: 14pt; }" +
+    ".score-zero { font-weight: bold; text-align: center; color: #64748b; font-size: 14pt; }" +
+    ".rank-top1 { font-weight: bold; text-align: center; color: #b45309; font-size: 14pt; }" +
+    ".rank-top23 { font-weight: bold; text-align: center; color: #6b21a8; font-size: 14pt; }" +
+    ".rank-normal { font-weight: bold; text-align: center; color: #475569; font-size: 14pt; }" +
+    "</style></head><body>" +
+
+    "<table>" +
+    "<tr><td colspan='4' class='main-title'>BẢNG ĐIỂM TÍCH LŨY THI ĐỦA LỚP " + currentClassName + "</td></tr>" +
+    "<tr><td colspan='4' class='sub-header'>" + teacherGender + ": " + teacherName + " &bull; Năm Học: " + currentSchoolYear + " &bull; Chế độ: " + modeName + " &bull; Cập nhật: " + formatDateFromIso(curIso) + "</td></tr>" +
+    "<tr><td colspan='4' class='border-line'></td></tr>" +
+    "<tr><td colspan='4' style='height: 12px;'></td></tr>" +
+
+    "<thead><tr>" +
+    "<th style='width: 65px;'>STT</th>" +
+    "<th style='width: 350px;'>Họ và Tên Học Sinh</th>" +
+    "<th style='width: 160px;'>Điểm Tích Lũy</th>" +
+    "<th style='width: 140px;'>Thứ Hạng</th>" +
+    "</tr></thead><tbody>";
+
+    var currentRank = 1;
+
+    scoreList.forEach(function(item, idx) {
+        if (idx > 0 && item.score < scoreList[idx - 1].score) {
+            currentRank = idx + 1;
+        }
+
+        var rowClass = (idx % 2 === 1) ? "even-row" : "";
+        var rankText = "Thứ " + currentRank;
+        var rankClass = "rank-normal";
+
+        if (currentRank === 1) { 
+            rowClass = "top-1"; 
+            rankText = "Thứ 1"; 
+            rankClass = "rank-top1"; 
+        } else if (currentRank === 2) { 
+            rowClass = "top-2"; 
+            rankText = "Thứ 2"; 
+            rankClass = "rank-top23"; 
+        } else if (currentRank === 3) { 
+            rowClass = "top-3"; 
+            rankText = "Thứ 3"; 
+            rankClass = "rank-top23"; 
+        }
+
+        var scoreClass = "score-zero";
+        var displayScore = item.score + " điểm";
+
+        if (item.score > 0) {
+            scoreClass = "score-pos";
+            displayScore = "+" + item.score + " điểm";
+        } else if (item.score < 0) {
+            scoreClass = "score-neg";
+            displayScore = item.score + " điểm";
+        }
+
+        excelContent += "<tr class='" + rowClass + "'>" +
+        "<td class='text-center'>" + (idx + 1) + "</td>" +
+        "<td class='student-name'>" + item.name + "</td>" +
+        "<td class='" + scoreClass + "'>" + displayScore + "</td>" +
+        "<td class='" + rankClass + "'>" + rankText + "</td>" +
+        "</tr>";
+    });
+
+    excelContent += "</tbody></table></body></html>";
+
+    var blob = new Blob(['\ufeff', excelContent], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement("a");
+    link.href = url;
+    link.download = "Bang_Diem_Tich_Luy_Lop_" + currentClassName + "_" + formatDateFromIso(curIso).replace(/\//g, "-") + ".xls";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function renderHistoryTable() {
+    var tbody = document.getElementById("history-table-body"); tbody.innerHTML = "";
+    var filterWeek = document.getElementById("history-week-filter").value;
+    var activeHistory = (currentGameMode === "real") ? globalHistoryReal : globalHistoryTest;
+
+    var filtered = activeHistory.filter(function(h) { return (filterWeek === "all" || h.week == filterWeek); });
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#94a3b8; padding:20px;">Chưa có dữ liệu trích xuất cho tuần này!</td></tr>';
+        return;
+    }
+
+    filtered.slice().reverse().forEach(function(h) {
+        var tr = document.createElement("tr");
+        tr.innerHTML = '<td>Tuần ' + h.week + '</td><td>' + h.date + '</td><td style="color:#fde047;">' + h.topic + '</td><td style="color:#38bdf8; font-weight:bold;">' + h.student + '</td><td>' + h.q + '</td><td style="text-align:center; color:' + (h.isCorrect?'#4ade80':'#fca5a5') + ';">' + (h.isCorrect?'Đúng':'Sai') + '</td>';
+        tbody.appendChild(tr);
+    });
+}
+
+function openHistoryModal() { renderHistoryTable(); openModal("history-modal-box"); }
+function restartGame() { sessionHistory = []; totalSpinCountThisSession = 0; hasMCBeenCalledThisSession = false; document.getElementById("result-screen").style.display = "none"; document.getElementById("wheel-screen").style.display = "block"; }
+
+function saveSessionResultOnly() { if (sessionHistory.length === 0) { alert("⚠️ Buổi học chưa có dữ liệu!"); return; } alert("💾 ĐÃ LƯU THÀNH CÔNG VÀO HỆ THỐNG!"); }
+
+function exportSessionToCSV() {
+    var dataToExport = (sessionHistory && sessionHistory.length > 0) 
+        ? sessionHistory 
+        : ((currentGameMode === "real") ? globalHistoryReal : globalHistoryTest);
+
+    if (!dataToExport || dataToExport.length === 0) { 
+        alert("⚠️ Không tìm thấy dữ liệu lượt chơi hoặc nhật ký để xuất file!"); 
+        return; 
+    }
+
+    var curIso = document.getElementById("session-date-picker").value || getIsoToday();
+    var subjectName = currentTopicKey.split("-")[0].trim().replace(/\s+/g, "_");
+
+    var excelContent = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:x='urn:schemas-microsoft-com:office:excel' xmlns='http://www.w3.org/TR/REC-html40'>" +
+    "<head><meta charset='utf-8'><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>" +
+    "<x:Name>BaoCaoBuoiHoc</x:Name><x:WorksheetOptions>" +
+    "<x:Print><x:ValidPrinterInfo/><x:PaperSizeIndex>9</x:PaperSizeIndex>" +
+    "<x:HorizontalResolution>600</x:HorizontalResolution><x:VerticalResolution>600</x:VerticalResolution></x:Print>" +
+    "<x:PageSetup><x:Layout x:Orientation='Portrait'/>" +
+    "<x:Header x:Margin='0.3'/><x:Footer x:Margin='0.3'/>" +
+    "<x:PageMargins x:Left='0.98' x:Right='0.79' x:Top='0.79' x:Bottom='0.79'/></x:PageSetup>" +
+    "<x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->" +
+    "<style>" +
+    "@page { mso-page-orientation: portrait; margin: 2.0cm 2.0cm 2.0cm 2.5cm; }" +
+    "body { font-family: 'Times New Roman', Times, serif; font-size: 14pt; color: #1e293b; background-color: #ffffff; }" +
+    ".main-title { font-size: 18pt; font-weight: bold; color: #0284c7; text-align: center; height: 45px; vertical-align: middle; text-transform: uppercase; letter-spacing: 0.5px; }" +
+    ".sub-header { font-size: 14pt; color: #334155; text-align: center; height: 28px; vertical-align: middle; font-style: italic; }" +
+    ".border-line { border-bottom: 2.5pt solid #0284c7; height: 4px; }" +
+    "th { background-color: #0284c7; color: #ffffff; font-weight: bold; font-size: 14pt; border: 1pt solid #0284c7; text-align: center; vertical-align: middle; height: 40px; }" +
+    "td { border: 0.5pt solid #cbd5e1; font-size: 14pt; vertical-align: middle; padding: 8px 12px; height: 36px; }" +
+    ".text-center { text-align: center; }" +
+    ".student-name { font-weight: bold; color: #0f172a; white-space: nowrap !important; word-break: keep-all !important; mso-number-format:'\\@'; padding-left: 10px; }" +
+    ".status-correct { color: #16a34a; font-weight: bold; text-align: center; font-size: 14pt; }" +
+    ".status-wrong { color: #dc2626; font-weight: bold; text-align: center; font-size: 14pt; }" +
+    ".score-tag { font-weight: bold; text-align: center; color: #0284c7; font-size: 14pt; }" +
+    "</style></head><body>" +
+
+    "<table>" +
+    "<tr><td colspan='5' class='main-title'>BÁO CÁO TỔNG KẾT BUỔI HỌC 15 PHÚT - LỚP " + currentClassName + "</td></tr>" +
+    "<tr><td colspan='5' class='sub-header'><b>" + teacherGender + ":</b> " + teacherName + " &bull; <b>Năm học:</b> " + currentSchoolYear + " &bull; <b>Môn / Chủ đề:</b> " + currentTopicKey + "</td></tr>" +
+    "<tr><td colspan='5' class='sub-header'><b>Thời gian:</b> Tuần " + currentWeek + " &bull; Ngày " + formatDateFromIso(curIso) + " &bull; <b>MC:</b> " + selectedMCName + "</td></tr>" +
+    "<tr><td colspan='5' class='border-line'></td></tr>" +
+    "<tr><td colspan='5' style='height: 12px;'></td></tr>" +
+
+    "<thead><tr>" +
+    "<th style='width: 65px;'>STT</th>" +
+    "<th style='width: 250px;'>Họ và Tên Học Sinh</th>" +
+    "<th style='width: 450px;'>Nội Dung Câu Hỏi</th>" +
+    "<th style='width: 120px;'>Kết Quả</th>" +
+    "<th style='width: 100px;'>Điểm</th>" +
+    "</tr></thead><tbody>";
+
+    dataToExport.forEach(function(item, idx) {
+        var statusClass = item.isCorrect ? "status-correct" : "status-wrong";
+        var statusText = item.isCorrect ? "Đúng" : "Sai";
+        var ptsText = item.pts > 0 ? "+" + item.pts : item.pts;
+        
+        var cleanStudentName = String(item.student || "").replace(/[\u{1F300}-\u{1F9FF}]/gu, '').replace(/\(Top\s*\d+\)/gi, '').trim();
+
+        excelContent += "<tr>" +
+        "<td class='text-center'>" + (idx + 1) + "</td>" +
+        "<td class='student-name'>" + cleanStudentName + "</td>" +
+        "<td>" + (item.q || "") + "</td>" +
+        "<td class='" + statusClass + "'>" + statusText + "</td>" +
+        "<td class='score-tag'>" + ptsText + "</td>" +
+        "</tr>";
+    });
+
+    excelContent += "</tbody></table></body></html>";
+
+    var blob = new Blob(['\ufeff', excelContent], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement("a");
+    link.href = url;
+    link.download = "Bao_Cao_Lop_" + currentClassName + "_" + subjectName + "_Tuan_" + currentWeek + ".xls";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function exportSessionToWord() {
+    var dataToExport = (sessionHistory && sessionHistory.length > 0) 
+        ? sessionHistory 
+        : ((currentGameMode === "real") ? globalHistoryReal : globalHistoryTest);
+
+    if (!dataToExport || dataToExport.length === 0) { 
+        alert("⚠️ Không tìm thấy dữ liệu lượt chơi hoặc nhật ký để xuất file!"); 
+        return; 
+    }
+
+    var curIso = document.getElementById("session-date-picker").value || getIsoToday();
+    var subjectName = currentTopicKey.split("-")[0].trim().replace(/\s+/g, "_");
+
+    renderMath().then(function() {
+        var wordContent = "<html><head><meta charset='utf-8'>" +
+        "<style>" +
+        "@page Section1 { size: 595.35pt 841.99pt; margin: 2.0cm 2.0cm 2.0cm 2.5cm; mso-header-margin: 36.0pt; mso-footer-margin: 36.0pt; mso-paper-source: 0; }" +
+        "div.Section1 { page: Section1; }" +
+        "body { font-family: 'Times New Roman', Times, serif; font-size: 14pt; line-height: 1.4; color: #1e293b; background-color: #ffffff; }" +
+        ".report-header { text-align: center; margin-bottom: 20px; border-bottom: 2.5pt solid #0284c7; padding-bottom: 12px; }" +
+        "h1 { font-size: 18pt; color: #0284c7; margin-bottom: 6px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px; }" +
+        ".sub-info { font-size: 14pt; color: #334155; margin-top: 4px; font-style: italic; }" +
+        "table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14pt; }" +
+        "th { background-color: #0284c7; color: #ffffff; text-align: center; padding: 10px 8px; border: 1pt solid #0284c7; font-weight: bold; font-size: 14pt; }" +
+        "td { padding: 8px 10px; border: 0.5pt solid #cbd5e1; vertical-align: middle; font-size: 14pt; }" +
+        ".text-center { text-align: center; }" +
+        ".status-correct { color: #16a34a; font-weight: bold; text-align: center; font-size: 14pt; }" +
+        ".status-wrong { color: #dc2626; font-weight: bold; text-align: center; font-size: 14pt; }" +
+        ".score-tag { font-weight: bold; text-align: center; color: #0284c7; font-size: 14pt; }" +
+        ".student-name-cell { font-weight: bold; color: #0f172a; white-space: nowrap !important; word-break: keep-all !important; }" +
+        "</style></head><body>" +
+
+        "<div class='Section1'>" +
+        "<div class='report-header'>" +
+        "<h1>BÁO CÁO TỔNG KẾT BUỔI HỌC 15 PHÚT - LỚP " + currentClassName + "</h1>" +
+        "<div class='sub-info'><b>" + teacherGender + ":</b> " + teacherName + " &bull; <b>Năm học:</b> " + currentSchoolYear + "</div>" +
+        "<div class='sub-info'><b>Môn / Chủ đề:</b> " + currentTopicKey + "</div>" +
+        "<div class='sub-info'><b>Thời gian:</b> Tuần " + currentWeek + " &bull; Ngày " + formatDateFromIso(curIso) + "</div>" +
+        "<div class='sub-info'><b>🎙️ MC Điều hành:</b> " + selectedMCName + "</div>" +
+        "</div>" +
+
+        "<table>" +
+        "<thead><tr>" +
+        "<th style='width: 8%;'>STT</th>" +
+        "<th style='width: 26%;'>Họ và Tên Học Sinh</th>" +
+        "<th style='width: 42%;'>Nội Dung Câu Hỏi</th>" +
+        "<th style='width: 12%;'>Kết Quả</th>" +
+        "<th style='width: 12%;'>Điểm</th>" +
+        "</tr></thead><tbody>";
+
+        dataToExport.forEach(function(item, idx) {
+            var statusClass = item.isCorrect ? "status-correct" : "status-wrong";
+            var statusText = item.isCorrect ? "Đúng" : "Sai";
+            var ptsText = item.pts > 0 ? "+" + item.pts : item.pts;
+
+            var cleanStudentName = String(item.student || "").replace(/[\u{1F300}-\u{1F9FF}]/gu, '').replace(/\(Top\s*\d+\)/gi, '').trim();
+
+            wordContent += "<tr>" +
+            "<td class='text-center'>" + (idx + 1) + "</td>" +
+            "<td class='student-name-cell'>" + cleanStudentName + "</td>" +
+            "<td>" + (item.q || "") + "</td>" +
+            "<td class='" + statusClass + "'>" + statusText + "</td>" +
+            "<td class='score-tag'>" + ptsText + "</td>" +
+            "</tr>";
+        });
+
+        wordContent += "</tbody></table></div></body></html>";
+
+        var blob = new Blob(['\ufeff', wordContent], { type: 'application/msword' });
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement("a");
+        link.href = url;
+        link.download = "Bao_Cao_Lop_" + currentClassName + "_" + subjectName + "_Tuan_" + currentWeek + ".doc";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+}
+
+function exportSessionToPDF() {
+    var dataToExport = (sessionHistory && sessionHistory.length > 0) 
+        ? sessionHistory 
+        : ((currentGameMode === "real") ? globalHistoryReal : globalHistoryTest);
+
+    if (!dataToExport || dataToExport.length === 0) { 
+        alert("⚠️ Không tìm thấy dữ liệu lượt chơi hoặc nhật ký để xuất file PDF!"); 
+        return; 
+    }
+
+    var curIso = document.getElementById("session-date-picker").value || getIsoToday();
+    var subjectName = currentTopicKey.split("-")[0].trim().replace(/\s+/g, "_");
+
+    renderMath().then(function() {
+        var pdfElement = document.createElement("div");
+        pdfElement.style.padding = "0";
+        pdfElement.style.fontFamily = "'Times New Roman', Times, serif";
+        pdfElement.style.fontSize = "14pt";
+        pdfElement.style.color = "#000000";
+
+        var rowsHtml = "";
+        dataToExport.forEach(function(item, idx) {
+            var statusText = item.isCorrect ? "Đúng" : "Sai";
+            var ptsText = item.pts > 0 ? "+" + item.pts : item.pts;
+            var cleanStudentName = String(item.student || "").replace(/[\u{1F300}-\u{1F9FF}]/gu, '').replace(/\(Top\s*\d+\)/gi, '').trim();
+
+            rowsHtml += "<tr style='page-break-inside: avoid;'>" +
+                "<td style='border:1px solid #000; padding:6px; text-align:center; font-size:14pt;'>" + (idx + 1) + "</td>" +
+                "<td style='border:1px solid #000; padding:6px; font-weight:bold; font-size:14pt;'>" + cleanStudentName + "</td>" +
+                "<td style='border:1px solid #000; padding:6px; font-size:14pt;'>" + (item.q || "") + "</td>" +
+                "<td style='border:1px solid #000; padding:6px; text-align:center; font-weight:bold; font-size:14pt;'>" + statusText + "</td>" +
+                "<td style='border:1px solid #000; padding:6px; text-align:center; font-weight:bold; font-size:14pt;'>" + ptsText + "</td>" +
+                "</tr>";
+        });
+
+        pdfElement.innerHTML = 
+            "<div style='text-align:center; font-weight:bold; font-size:16pt; margin-bottom:6px; font-family:\"Times New Roman\";'>BÁO CÁO TỔNG KẾT BUỔI HỌC 15 PHÚT - LỚP " + currentClassName + "</div>" +
+            "<div style='text-align:center; font-style:italic; font-size:14pt; margin-bottom:4px; font-family:\"Times New Roman\";'>" + teacherGender + ": " + teacherName + " &bull; Năm học: " + currentSchoolYear + " &bull; Môn/Chủ đề: " + currentTopicKey + "</div>" +
+            "<div style='text-align:center; font-style:italic; font-size:14pt; margin-bottom:15px; font-family:\"Times New Roman\";'>Thời gian: Tuần " + currentWeek + " &bull; Ngày " + formatDateFromIso(curIso) + " &bull; MC: " + selectedMCName + "</div>" +
+            "<table style='width:100%; border-collapse:collapse; font-family:\"Times New Roman\"; font-size:14pt;'>" +
+            "<thead><tr style='background-color:#f2f2f2;'>" +
+            "<th style='border:1px solid #000; padding:8px; text-align:center; width:8%; font-size:14pt;'>STT</th>" +
+            "<th style='border:1px solid #000; padding:8px; text-align:center; width:26%; font-size:14pt;'>Họ và Tên Học Sinh</th>" +
+            "<th style='border:1px solid #000; padding:8px; text-align:center; width:42%; font-size:14pt;'>Nội Dung Câu Hỏi</th>" +
+            "<th style='border:1px solid #000; padding:8px; text-align:center; width:12%; font-size:14pt;'>Kết Quả</th>" +
+            "<th style='border:1px solid #000; padding:8px; text-align:center; width:12%; font-size:14pt;'>Điểm</th>" +
+            "</tr></thead>" +
+            "<tbody>" + rowsHtml + "</tbody>" +
+            "</table>";
+
+        var opt = {
+            margin:       [20, 20, 20, 25],
+            filename:     "Bao_Cao_Lop_" + currentClassName + "_" + subjectName + "_Tuan_" + currentWeek + ".pdf",
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2 },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        html2pdf().set(opt).from(pdfElement).save();
+    });
+}
+
+function runProgramTestDrive() {
+    if (!isAdminLoggedIn) {
+        alert("🔒 Chức năng chạy thử chương trình yêu cầu Thầy (cô) chủ nhiệm đăng nhập quyền ADMIN!");
+        return;
+    }
+    toggleGameMode("test");
+    alert("🧪 Đã bật chế độ 'Chạy Thử Chương Trình'!");
+}
+
+function clearTestLogsOnly() {
+    if (confirm("🧹 Thầy (cô) chủ nhiệm có chắc chắn muốn XÓA SẠCH toàn bộ Nhật ký và dữ liệu chạy thử nghiệm không?")) {
+        globalHistoryTest = [];
+        cumulativeScoresTest = {};
+        localStorage.removeItem("wheel_v50_global_history_test");
+        localStorage.setItem("wheel_v50_cumulative_scores_test", JSON.stringify(cumulativeScoresTest));
+        renderHistoryTable();
+        alert("✨ Đã dọn dẹp sạch sẽ toàn bộ dữ liệu chạy thử!");
+    }
+}
+
+async function resetAllDataForNewTerm() {
+    if (!isAdminLoggedIn) {
+        alert("🔒 Chức năng quản trị này yêu cầu Thầy (cô) chủ nhiệm đăng nhập quyền ADMIN!");
+        return;
+    }
+
+    var confirmText = prompt("⚠️ CẢNH BÁO ADMIN:\nThao tác này sẽ XÓA SẠCH TOÀN BỘ Nhật ký buổi học và RESET ĐIỂM TÍCH LŨY của tất cả học sinh về 0!\n\nNhập chữ 'XOA' (viết hoa) vào ô dưới đây để xác nhận:");
+    
+    if (confirmText !== "XOA") {
+        alert("❌ Đã hủy thao tác reset dữ liệu.");
+        return;
+    }
+
+    try {
+        cumulativeScoresReal = {};
+        cumulativeScoresTest = {};
+        
+        if (Array.isArray(studentsData)) {
+            studentsData.forEach(function(st) {
+                var name = (typeof st === "object") ? st.name : st;
+                if (name) {
+                    cumulativeScoresReal[name] = 0;
+                    cumulativeScoresTest[name] = 0;
+                    if (st.topicsDetail) st.topicsDetail = {};
+                }
+            });
+            saveStudentsData();
+        }
+
+        globalHistoryReal = [];
+        globalHistoryTest = [];
+        sessionHistory = [];
+
+        localStorage.removeItem("wheel_v50_global_history_real");
+        localStorage.removeItem("wheel_v50_global_history_test");
+        
+        localStorage.setItem("wheel_v50_cumulative_scores_real", JSON.stringify(cumulativeScoresReal));
+        localStorage.setItem("wheel_v50_cumulative_scores_test", JSON.stringify(cumulativeScoresTest));
+
+        if (typeof db !== 'undefined' && db) {
+            await db.collection("scores").doc("cumulative_real").set(cumulativeScoresReal);
+            await db.collection("scores").doc("cumulative_test").set(cumulativeScoresTest);
+
+            await db.collection("logs").doc("history_real").set({ list: [] });
+            await db.collection("logs").doc("history_test").set({ list: [] });
+        }
+
+        if (typeof renderStudentTable === "function") renderStudentTable();
+        if (typeof renderHistoryTable === "function") renderHistoryTable();
+        if (typeof renderCumulativeTable === "function") renderCumulativeTable();
+
+        alert("🎉 THÀNH CÔNG!\nHệ thống đã xóa sạch nhật ký và reset điểm tích lũy của tất cả học sinh về 0.");
+
+    } catch (error) {
+        console.error("Lỗi khi reset dữ liệu:", error);
+        alert("⚠️ Đã làm sạch trên máy tính cá nhân. Lỗi kết nối Firebase: " + error.message);
+    }
+}
+
+function resetCumulativeScores() {
+    resetAllDataForNewTerm();
+}
+
+window.onload = function() {
+    initApp();
+    renderMath();
+};
+</script>
+
+</body>
+</html>
